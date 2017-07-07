@@ -1,0 +1,9 @@
+FILE(GLOB RA_SOURCES *.h *.c ./join/*.h ./join/*.cpp ./project/*.h ./project/*.cpp ./union/*.h ./union/*.cpp)
+
+INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
+SET(RA_LIBS ${RA_LIBS} ${MPI_LIBRARIES})
+
+ADD_LIBRARY(ra "${RA_SOURCES}")
+
+TARGET_LINK_LIBRARIES(ra m ${RA_LIBS})
+SET_TARGET_PROPERTIES(ra PROPERTIES LINKER_LANGUAGE CXX)
