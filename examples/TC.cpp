@@ -16,15 +16,76 @@
 #include <mpi.h>
 
 #include "../data_struct/tuple.h"
+#include "../data_struct/relation.h"
 #include "../ra/ra_operations.h"
+
+static int rank = 0;
+static int nprocs = 1;
 
 int main(int argc, char **argv)
 {
     // Initializing MPI
     MPI_Init(&argc, &argv);
 
-    tuple t;
-    t.set_number_of_column(2);
+    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int global_row_count;
+    int col_count = 2;
+
+    if (rank == 0)
+    {
+        char meta_data_filename[1024];
+        sprintf(meta_data_filename, "%s/meta_data.txt", argv[1]);
+        printf("Opening File %s\n", meta_data_filename);
+
+        FILE *fp_in;
+        fp_in = fopen(meta_data_filename, "r");
+        fscanf (fp_in, "(row count)\n%d\n(col count)\n2", &global_row_count);
+        fclose(fp_in);
+        printf("Total number of rows = %d\n", global_row_count);
+    }
+
+    MPI_Bcast(&global_row_count, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    int read_offset;
+    int local_row_count;
+
+    read_offset = ceil((float)global_row_count / nprocs) * rank;
+    if (read_offset + ceil((float)global_row_count / nprocs) > global_row_count)
+      local_row_count = global_row_count - read_offset;
+    else
+      local_row_count = (int) ceil((float)global_row_count / nprocs);
+
+    char data_filename[1024];
+    sprintf(data_filename, "%s/data.raw", argv[1]);
+    int fp = open(data_filename, O_RDONLY);
+    int read_buffer[local_row_count * col_count];
+    pread(fp, read_buffer, local_row_count * col_count * sizeof(int), read_offset * col_count * sizeof(int));
+    close(fp);
+
+    printf("Rank %d reads %d elements from %d offset from %s\n", rank, local_row_count, read_offset, data_filename);
+
+    relation input;
+    input.set_rank(rank);
+    input.set_nprocs(nprocs);
+    input.set_comm(MPI_COMM_WORLD);
+    input.set_number_of_columns(col_count);
+    input.set_number_of_global_rows(global_row_count);
+    input.set_number_of_local_rows(local_row_count);
+
+    input.create_init_data();
+    input.assign_init_data(read_buffer);
+    input.print_init_data();
+
+    input.hash_init_data();
+
+    //relation reordered_input(input);
+
+
+    input.free_init_data();
+
+
 
     MPI_Finalize();
     return 0;
