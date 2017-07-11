@@ -75,6 +75,21 @@ void relation::assign_init_data(int* data)
     }
 }
 
+
+// TODO: this is hardcoded completely inverts
+void relation::assign_inverted_data(int* data)
+{
+    int count = 0;
+    for(int i = 0; i < local_number_of_rows; ++i)
+    {
+        for(int j = number_of_columns - 1; j >= 0; j--)
+        {
+            initial_data[i][j] = data[count++];
+        }
+    }
+}
+
+
 void relation::print_init_data()
 {
     char local_file_name[1024];
@@ -265,17 +280,4 @@ void relation::hash_init_data_free()
 
     delete[] hashed_data;
     return;
-}
-
-
-void relation::reorder_columns()
-{
-    int temp;
-    // TODO: hardcoded for two columns
-    for(int i = 0; i < hash_buffer_size / number_of_columns; ++i)
-    {
-        temp = hashed_data[i][0];
-        hashed_data[i][0] = hashed_data[i][1];
-        hashed_data[i][1] = temp;
-    }
 }

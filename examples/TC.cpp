@@ -73,28 +73,31 @@ int main(int argc, char **argv)
     input.set_number_of_columns(col_count);
     input.set_number_of_global_rows(global_row_count);
     input.set_number_of_local_rows(local_row_count);
-
     input.create_init_data();
     input.assign_init_data(read_buffer);
     input.print_init_data();
     input.hash_init_data();
-
-    char hash_file[1024];
-    sprintf(hash_file, "hash_data_%d.txt", rank);
+    char hash_file[1024] = "hash_data_%d.txt";
     input.print_hashed_data(hash_file);
-
-
-
-    relation reordered_input(input);
-    reordered_input.reorder_columns();
-    char reordered_hash_name[1024];
-    sprintf(reordered_hash_name, "reordered_hash_data_%d.txt", rank);
-    reordered_input.print_hashed_data(reordered_hash_name);
-    reordered_input.hash_init_data_free();
-
     input.hash_init_data_free();
     input.free_init_data();
 
+
+    relation reordered_input;
+    reordered_input.set_rank(rank);
+    reordered_input.set_nprocs(nprocs);
+    reordered_input.set_comm(MPI_COMM_WORLD);
+    reordered_input.set_number_of_columns(col_count);
+    reordered_input.set_number_of_global_rows(global_row_count);
+    reordered_input.set_number_of_local_rows(local_row_count);
+    reordered_input.create_init_data();
+    reordered_input.assign_inverted_data(read_buffer);
+    reordered_input.print_init_data();
+    reordered_input.hash_init_data();
+    char reordered_hash_file[1024] = "reordered_hash_data_%d.txt";
+    reordered_input.print_hashed_data(reordered_hash_file);
+    reordered_input.hash_init_data_free();
+    reordered_input.free_init_data();
 
 
     MPI_Finalize();

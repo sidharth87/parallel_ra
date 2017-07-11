@@ -59,6 +59,7 @@ public:
 
     void create_init_data();
     void assign_init_data(int* data);
+    void assign_inverted_data(int* data);
     void print_init_data();
     void free_init_data();
 
@@ -66,9 +67,6 @@ public:
     void hash_init_data();
     void print_hashed_data(char* filename);
     void hash_init_data_free();
-
-    void reorder_columns();
-
 };
 
 
