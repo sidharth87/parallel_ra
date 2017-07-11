@@ -1,3 +1,24 @@
+/*
+
+Input G(0,1), output T(0,1)
+
+Sequence 0:
+  MOVE T <- G                 // Copies G to T
+  GOTO 1                      // Jumps to sequence 1
+
+Sequence 1:
+  MOVE T' <- T                // Move the old T into T', so we can compare at the end
+  REORDER G' <- G {1,0}       // Swap the columns in G and call that G'
+  JOIN J <- G', T (keys=1)    // Join G' and T where only the 0th column is a key and call the result J and trim the second column
+  UNION T <- T, J''           // union these new transitive paths with the old ones into T
+  COND T, T' {yes=2,no=1}     // Check if T has changed, if they're equal goto 2, if they are not (it changed) goto 1
+
+Sequence 2:
+  HALT
+*/
+
+
+
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
