@@ -77,12 +77,22 @@ int main(int argc, char **argv)
     input.create_init_data();
     input.assign_init_data(read_buffer);
     input.print_init_data();
-
     input.hash_init_data();
 
-    //relation reordered_input(input);
+    char hash_file[1024];
+    sprintf(hash_file, "hash_data_%d.txt", rank);
+    input.print_hashed_data(hash_file);
 
 
+
+    relation reordered_input(input);
+    reordered_input.reorder_columns();
+    char reordered_hash_name[1024];
+    sprintf(reordered_hash_name, "reordered_hash_data_%d.txt", rank);
+    reordered_input.print_hashed_data(reordered_hash_name);
+    reordered_input.hash_init_data_free();
+
+    input.hash_init_data_free();
     input.free_init_data();
 
 

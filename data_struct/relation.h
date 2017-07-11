@@ -33,6 +33,8 @@ private:
     int local_number_of_rows;
 
     int **initial_data;
+
+    int hash_buffer_size;
     int **hashed_data;
 
 
@@ -41,7 +43,6 @@ public:
 
     relation();
     relation(const relation &r);
-    //~relation();
 
     void set_rank(int rank);
     void set_nprocs(int nprocs);
@@ -61,7 +62,12 @@ public:
     void print_init_data();
     void free_init_data();
 
+
     void hash_init_data();
+    void print_hashed_data(char* filename);
+    void hash_init_data_free();
+
+    void reorder_columns();
 
 };
 
