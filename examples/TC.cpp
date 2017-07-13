@@ -1,5 +1,4 @@
 /*
-
 Input G(0,1), output T(0,1)
 
 Sequence 0:
@@ -96,13 +95,22 @@ int main(int argc, char **argv)
     input.set_number_of_local_rows(local_row_count);
     input.create_init_data();
     input.assign_init_data(read_buffer);
-    input.print_init_data();
+
+    char init_file_name[1024];
+    sprintf(init_file_name, "init_data_%d.txt", rank);
+    input.print_init_data(init_file_name);
+
     input.hash_init_data();
     char hash_file[1024];
     sprintf(hash_file, "hash_data_%d.txt", rank);
-    input.print_hashed_data(hash_file);
-    input.hash_init_data_free();
-    input.free_init_data();
+    input.print_outer_hash_data(hash_file);
+
+    input.inner_hash_perform();
+    char inner_hash_file[1024];
+    sprintf(inner_hash_file, "inner_hash_data_%d.txt", rank);
+    input.print_inner_hash_data(inner_hash_file);
+
+
 
 
     relation reordered_input;
@@ -114,11 +122,29 @@ int main(int argc, char **argv)
     reordered_input.set_number_of_local_rows(local_row_count);
     reordered_input.create_init_data();
     reordered_input.assign_inverted_data(read_buffer);
-    reordered_input.print_init_data();
+
+    char reordered_init_file_name[1024];
+    sprintf(reordered_init_file_name, "reordered_init_data_%d.txt", rank);
+    reordered_input.print_init_data(reordered_init_file_name);
     reordered_input.hash_init_data();
     char reordered_hash_file[1024];
     sprintf(reordered_hash_file, "reordered_hash_data_%d.txt", rank);
-    reordered_input.print_hashed_data(reordered_hash_file);
+    reordered_input.print_outer_hash_data(reordered_hash_file);
+
+    reordered_input.inner_hash_perform();
+    char reordered_inner_hash_file[1024];
+    sprintf(reordered_inner_hash_file, "reordered_inner_hash_data_%d.txt", rank);
+    reordered_input.print_inner_hash_data(reordered_inner_hash_file);
+
+    reordered_input.join(&input);
+
+    char inner_hash_file_after_join[1024];
+    sprintf(inner_hash_file_after_join, "inner_hash_data_after_join_%d.txt", rank);
+    input.print_inner_hash_data(inner_hash_file_after_join);
+
+
+    input.hash_init_data_free();
+    input.free_init_data();
     reordered_input.hash_init_data_free();
     reordered_input.free_init_data();
 

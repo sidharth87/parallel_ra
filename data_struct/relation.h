@@ -1,6 +1,8 @@
 #ifndef RELATION_H
 #define RELATION_H
 
+#define BUCKET_COUNT 4
+
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
@@ -34,8 +36,14 @@ private:
 
     int **initial_data;
 
-    int hash_buffer_size;
-    int **hashed_data;
+    int outer_hash_buffer_size;
+    int **outer_hash_data;
+
+    int number_of_inner_hash_buckets;
+    int *inner_hash_bucket_size;
+    //int ***inner_hash_data;
+
+    std::vector<int> inner_hash_data[BUCKET_COUNT];
 
 
 
@@ -44,29 +52,42 @@ public:
     relation();
     relation(const relation &r);
 
-    void set_rank(int rank);
-    void set_nprocs(int nprocs);
-    void set_comm(MPI_Comm cmomm);
+    /* MPI Setup */
+    void set_rank (int r) {rank = r;}
+    void set_nprocs (int n) {nprocs = n;}
+    void set_comm (MPI_Comm c) {comm = c;}
 
-    int get_number_of_columns();
-    void set_number_of_columns(int col_count);
+    /* Initial setup */
+    int get_number_of_columns() {return number_of_columns;}
+    void set_number_of_columns (int c) {number_of_columns = c;}
 
-    int get_number_of_global_rows();
-    void set_number_of_global_rows(int row_count);
+    int get_number_of_global_rows() {return global_number_of_rows;}
+    void set_number_of_global_rows (int rc) {global_number_of_rows = rc;}
 
-    int get_number_of_local_rows();
-    void set_number_of_local_rows(int row_count);
+    int get_number_of_local_rows() {return local_number_of_rows;}
+    void set_number_of_local_rows(int rc) {local_number_of_rows = rc;}
 
+    /* Setting up buffer for first I/O */
     void create_init_data();
     void assign_init_data(int* data);
     void assign_inverted_data(int* data);
-    void print_init_data();
+    void print_init_data(char* filename);
     void free_init_data();
 
-
+    /* Setting up outer hash */
     void hash_init_data();
-    void print_hashed_data(char* filename);
+    void print_outer_hash_data(char* filename);
     void hash_init_data_free();
+
+    /* Setting up inner hash */
+    void set_number_of_inner_hash_buckets(int b) {number_of_inner_hash_buckets = b;}
+    int get_number_of_inner_hash_buckets() {return number_of_inner_hash_buckets;}
+    void inner_hash_perform();
+    void print_inner_hash_data(char* filename);
+
+
+    void join(relation* r);
+    void insert(int* buffer, int buffer_size);
 };
 
 
