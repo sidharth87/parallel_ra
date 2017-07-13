@@ -136,11 +136,30 @@ int main(int argc, char **argv)
     sprintf(reordered_inner_hash_file, "reordered_inner_hash_data_%d.txt", rank);
     reordered_input.print_inner_hash_data(reordered_inner_hash_file);
 
-    reordered_input.join(&input);
 
+
+    reordered_input.join(&input, 0);
     char inner_hash_file_after_join[1024];
-    sprintf(inner_hash_file_after_join, "inner_hash_data_after_join_%d.txt", rank);
+    sprintf(inner_hash_file_after_join, "inner_hash_data_after_join_1_%d.txt", rank);
     input.print_inner_hash_data(inner_hash_file_after_join);
+
+    char reorderd_inner_hash_file_after_join[1024];
+    sprintf(reorderd_inner_hash_file_after_join, "reorderd_inner_hash_data_after_join_1_%d.txt", rank);
+    reordered_input.print_inner_hash_data(reorderd_inner_hash_file_after_join);
+
+
+    reordered_input.join(&input, 1);
+    reordered_input.join(&input, 1);
+    reordered_input.join(&input, 1);
+    reordered_input.join(&input, 1);
+
+    char inner_hash_file_after_join2[1024];
+    sprintf(inner_hash_file_after_join2, "inner_hash_data_after_join_2_%d.txt", rank);
+    input.print_inner_hash_data(inner_hash_file_after_join2);
+
+    char reorderd_inner_hash_file_after_join2[1024];
+    sprintf(reorderd_inner_hash_file_after_join2, "reorderd_inner_hash_data_after_join_2_%d.txt", rank);
+    reordered_input.print_inner_hash_data(reorderd_inner_hash_file_after_join2);
 
 
     input.hash_init_data_free();

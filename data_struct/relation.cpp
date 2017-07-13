@@ -238,7 +238,7 @@ void relation::print_inner_hash_data(char* filename)
 }
 
 
-void relation::join(relation* r)
+void relation::join(relation* r, int lc)
 {
     int lhs;
     std::vector<int> join_output;
@@ -259,7 +259,7 @@ void relation::join(relation* r)
         }
     }
 
-    if (rank == 0)
+    if (rank == 0 && lc == 1)
     {
         for (int j = 0; j < join_output.size(); j = j + number_of_columns)
         {
@@ -270,6 +270,7 @@ void relation::join(relation* r)
 
     // One options to send data to the relations, all at once and the re-bucketing at the reciever side
 
+    {
     // Send Join output
     /* process_size[j] stores the number of samples to be sent to process with rank j */
     int process_size[nprocs];
@@ -309,14 +310,68 @@ void relation::join(relation* r)
 
     /* Sending data to all processes */
     /* What is the buffer size to allocate */
-    outer_hash_buffer_size = 0;
+    int outer_hash_buffer_size = 0;
     for (int i = 0; i < nprocs; i++)
         outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
 
     int hash_buffer[outer_hash_buffer_size];
     MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
 
+    //if (lc == 0)
     r->insert(hash_buffer, outer_hash_buffer_size);
+    }
+
+
+    {
+        // Send Join output
+        /* process_size[j] stores the number of samples to be sent to process with rank j */
+        int process_size[nprocs];
+        memset(process_size, 0, nprocs * sizeof(int));
+
+        /* vector[i] contains the data that needs to be sent to process i */
+        std::vector<int> process_data_vector[nprocs];
+
+        for (int j = (number_of_columns - 1); j < join_output.size(); j = j + number_of_columns)
+        {
+            process_size[outer_hash(join_output[j])%nprocs] = process_size[outer_hash(join_output[j])%nprocs] + number_of_columns;
+            for (int k = j; k >= j - (number_of_columns - 1); k--)
+                process_data_vector[outer_hash(join_output[j])%nprocs].push_back(join_output[k]);
+        }
+
+        int prefix_sum_process_size[nprocs];
+        memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
+        for (int i = 1; i < nprocs; i++)
+            prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
+
+        int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
+        int process_data[process_data_buffer_size];
+
+        for (int i = 0; i < nprocs; i++)
+            memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
+
+        /* This step prepares for actual data transfer */
+        /* Every process sends to every other process the amount of data it is going to send */
+        int recv_process_size_buffer[nprocs];
+        memset(recv_process_size_buffer, 0, nprocs * sizeof(int));
+        MPI_Alltoall(process_size, 1, MPI_INT, recv_process_size_buffer, 1, MPI_INT, comm);
+
+        int prefix_sum_recv_process_size_buffer[nprocs];
+        memset(prefix_sum_recv_process_size_buffer, 0, nprocs * sizeof(int));
+        for (int i = 1; i < nprocs; i++)
+            prefix_sum_recv_process_size_buffer[i] = prefix_sum_recv_process_size_buffer[i - 1] + recv_process_size_buffer[i - 1];
+
+        /* Sending data to all processes */
+        /* What is the buffer size to allocate */
+        int outer_hash_buffer_size = 0;
+        for (int i = 0; i < nprocs; i++)
+            outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
+
+        int hash_buffer[outer_hash_buffer_size];
+        MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
+
+        //if (lc == 0)
+        this->insert(hash_buffer, outer_hash_buffer_size);
+    }
 
     return;
 }
