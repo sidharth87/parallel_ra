@@ -1,7 +1,9 @@
 #include "relation.h"
 
-static uint32_t inner_hash( uint32_t a);
-static uint32_t outer_hash( uint32_t a);
+typedef uint64_t u64;
+
+static u64 inner_hash( u64 a);
+static u64 outer_hash( u64 a);
 
 relation::relation()
 {
@@ -73,9 +75,9 @@ void relation::print_init_data(char* filename)
         for(int j = 0; j < number_of_columns; ++j)
         {
             if (j == number_of_columns - 1)
-                fprintf(fp, "%d", initial_data[i][j]);
+                fprintf(fp, "%lld", (unsigned long long)initial_data[i][j]);
             else
-                fprintf(fp, "%d\t", initial_data[i][j]);
+                fprintf(fp, "%lld\t", (unsigned long long)initial_data[i][j]);
         }
         fprintf(fp, "\n");
     }
@@ -93,9 +95,9 @@ void relation::print_outer_hash_data(char* filename)
         for(int j = 0; j < number_of_columns; ++j)
         {
             if (j == number_of_columns - 1)
-                fprintf(fp, "%d", outer_hash_data[i][j]);
+                fprintf(fp, "%lld", (unsigned long long)outer_hash_data[i][j]);
             else
-                fprintf(fp, "%d\t", outer_hash_data[i][j]);
+                fprintf(fp, "%lld\t", (unsigned long long)outer_hash_data[i][j]);
         }
         fprintf(fp, "\n");
     }
@@ -124,9 +126,10 @@ void relation::hash_init_data()
     int hash_column_index = 0;
     for (int i = 0; i < local_number_of_rows; ++i)
     {
-        process_size[outer_hash(initial_data[i][hash_column_index])%nprocs] = process_size[outer_hash(initial_data[i][hash_column_index])%nprocs] + number_of_columns;
+        uint64_t index = initial_data[i][hash_column_index];
+        process_size[outer_hash(index)%nprocs] = process_size[outer_hash(index)%nprocs] + number_of_columns;
         for (int j = 0; j < number_of_columns; j++)
-            process_data_vector[outer_hash(initial_data[i][hash_column_index])%nprocs].push_back(initial_data[i][j]);
+            process_data_vector[outer_hash(index)%nprocs].push_back(initial_data[i][j]);
     }
 
     int prefix_sum_process_size[nprocs];
@@ -151,12 +154,12 @@ void relation::hash_init_data()
     for (int i = 1; i < nprocs; i++)
         prefix_sum_recv_process_size_buffer[i] = prefix_sum_recv_process_size_buffer[i - 1] + recv_process_size_buffer[i - 1];
 
-#if 1
+#if 0
     if (rank == 7)
     {
         printf("Rank %d: ", rank);
         for(int i = 0; i < nprocs; ++i)
-            printf(" %d [%d] ", process_size[i], prefix_sum_process_size[i]);
+            printf(" %lld [%lld] ", (unsigned long long)process_size[i], (unsigned long long)prefix_sum_process_size[i]);
         printf("\n");
     }
 #endif
@@ -164,7 +167,7 @@ void relation::hash_init_data()
     /* Sending data to all processes */
     /* What is the buffer size to allocate */
     outer_hash_buffer_size = 0;
-    for (int i = 0; i < nprocs; i++)
+    for(int i = 0; i < nprocs; i++)
         outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
 
     outer_hash_data = new int*[outer_hash_buffer_size / number_of_columns];
@@ -175,14 +178,14 @@ void relation::hash_init_data()
     int total_row_size = 0;
     MPI_Allreduce(&outer_hash_buffer_size, &total_row_size, 1, MPI_INT, MPI_SUM, comm);
     assert(total_row_size == global_number_of_rows * number_of_columns);
-    printf("[%d] Buffer size after hashing %d [%d]\n", rank, outer_hash_buffer_size, total_row_size);
+    printf("[%d] Buffer size after hashing %lld [%lld]\n", rank, (unsigned long long)outer_hash_buffer_size, (unsigned long long)total_row_size);
 #endif
 
     int hash_buffer[outer_hash_buffer_size];
     MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
 
     // TODO: this is hard coded for two columns
-    for (int i = 0; i < outer_hash_buffer_size; i++)
+    for(int i = 0; i < outer_hash_buffer_size; i++)
         outer_hash_data[i / number_of_columns][i % number_of_columns] = hash_buffer[i];
 
     return;
@@ -205,7 +208,7 @@ void relation::inner_hash_perform()
     int inner_bucket_id;
     for(int i = 0; i < outer_hash_buffer_size / number_of_columns; ++i)
     {
-        inner_bucket_id = inner_hash(outer_hash_data[i][hash_column]) % BUCKET_COUNT;
+        inner_bucket_id = inner_hash((uint64_t)outer_hash_data[i][hash_column]) % BUCKET_COUNT;
         for(int j = 0; j < number_of_columns; ++j)
         {
             inner_hash_data[inner_bucket_id].push_back(outer_hash_data[i][j]);
@@ -222,53 +225,57 @@ void relation::print_inner_hash_data(char* filename)
 
     for(int i = 0; i < BUCKET_COUNT; ++i)
     {
-        fprintf(fp, "[%d] Bucket size %d\n", i, (int)inner_hash_data[i].size());
+        fprintf(fp, "[%lld] Bucket size %d\n", (unsigned long long)i, (int)inner_hash_data[i].size());
         for(int j = 0; j < inner_hash_data[i].size(); ++j)
         {
-            //
+            /*
             if (j % number_of_columns != number_of_columns - 1)
-                fprintf(fp, "%d\t", inner_hash_data[i][j]);
+                fprintf(fp, "%lld\t", (unsigned long long)inner_hash_data[i][j]);
             else
-                fprintf(fp, "%d\n", inner_hash_data[i][j]);
-            //
+                fprintf(fp, "%lld\n", (unsigned long long)inner_hash_data[i][j]);
+            */
         }
         //fprintf(fp, "\n");
     }
     fclose(fp);
 }
 
+// 1 - 2   2 - 1
+// 2 - 3   3 - 2
 
-void relation::join(relation* r, int lc)
+int relation::join(relation* r, int lc)
 {
     int lhs;
     std::vector<int> join_output;
 
-    for (int i = 0; i < BUCKET_COUNT; i++)
+    double t1, t2, t3, t4;
+    double b1, b2, b3, b4;
+    double c1, c2, c3, c4;
+    double m1, m2, m3, m4;
+
+    t1 = MPI_Wtime();
+    for(int i = 0; i < BUCKET_COUNT; i++)
     {
-        for (int j = 0; j < this->inner_hash_data[i].size(); j = j + number_of_columns)
+        //printf("DS %d %d\n", (int)r->inner_hash_data[i].size(), (int)this->inner_hash_data[i].size());
+        for(int j = 0; j < r->inner_hash_data[i].size(); j = j + number_of_columns)
         {
-            lhs = this->inner_hash_data[i][j];
-            for (int k = 0; k < r->inner_hash_data[i].size(); k = k + number_of_columns)
+            lhs = r->inner_hash_data[i][j];
+            for(int k = 0; k < this->inner_hash_data[i].size(); k = k + number_of_columns)
             {
-                if (lhs == r->inner_hash_data[i][k])
+                if (lhs == this->inner_hash_data[i][k])
                 {
-                    join_output.push_back(this->inner_hash_data[i][j + 1]);
-                    join_output.push_back(r->inner_hash_data[i][k+1]);
+                    join_output.push_back(this->inner_hash_data[i][k + 1]);
+                    join_output.push_back(r->inner_hash_data[i][j+1]);
                 }
             }
         }
     }
-
-    if (rank == 0 && lc == 1)
-    {
-        for (int j = 0; j < join_output.size(); j = j + number_of_columns)
-        {
-            //printf("%d\t%d\n", join_output[j], join_output[j + 1]);
-        }
-    }
+    t2 = MPI_Wtime();
 
 
     // One options to send data to the relations, all at once and the re-bucketing at the reciever side
+
+    int before1 = 0, after1 = 0, before2 = 0, after2 = 0;
 
     {
     // Send Join output
@@ -279,22 +286,28 @@ void relation::join(relation* r, int lc)
     /* vector[i] contains the data that needs to be sent to process i */
     std::vector<int> process_data_vector[nprocs];
 
-    for (int j = 0; j < join_output.size(); j = j + number_of_columns)
+    c1 = MPI_Wtime();
+    for(int j = 0; j < join_output.size(); j = j + number_of_columns)
     {
-        process_size[outer_hash(join_output[j])%nprocs] = process_size[outer_hash(join_output[j])%nprocs] + number_of_columns;
-        for (int k = j; k < j + number_of_columns; k++)
-            process_data_vector[outer_hash(join_output[j])%nprocs].push_back(join_output[k]);
+        uint64_t index = outer_hash((uint64_t)join_output[j])%nprocs;
+        process_size[index] = process_size[index] + number_of_columns;
+        for(int k = j; k < j + number_of_columns; k++)
+            process_data_vector[index].push_back(join_output[k]);
     }
+    c2 = MPI_Wtime();
 
     int prefix_sum_process_size[nprocs];
     memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
-    for (int i = 1; i < nprocs; i++)
+    for(int i = 1; i < nprocs; i++)
         prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
 
     int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
-    int process_data[process_data_buffer_size];
+    int* process_data = new int[process_data_buffer_size];
+    memset(process_data, 0, process_data_buffer_size * sizeof(int));
 
-    for (int i = 0; i < nprocs; i++)
+    //printf("JOS %d PDBS %d PS %d\n", (int)join_output.size(), process_data_buffer_size, process_size[0]);
+
+    for(int i = 0; i < nprocs; i++)
         memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
 
     /* This step prepares for actual data transfer */
@@ -305,21 +318,43 @@ void relation::join(relation* r, int lc)
 
     int prefix_sum_recv_process_size_buffer[nprocs];
     memset(prefix_sum_recv_process_size_buffer, 0, nprocs * sizeof(int));
-    for (int i = 1; i < nprocs; i++)
+    for(int i = 1; i < nprocs; i++)
         prefix_sum_recv_process_size_buffer[i] = prefix_sum_recv_process_size_buffer[i - 1] + recv_process_size_buffer[i - 1];
 
     /* Sending data to all processes */
     /* What is the buffer size to allocate */
     int outer_hash_buffer_size = 0;
-    for (int i = 0; i < nprocs; i++)
+    for(int i = 0; i < nprocs; i++)
         outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
 
-    int hash_buffer[outer_hash_buffer_size];
+    //printf("HBS %lld\n", (unsigned long long)outer_hash_buffer_size);
+
+    int *hash_buffer = new int[outer_hash_buffer_size];
+    memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
+
+    b1 = MPI_Wtime();
     MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
+    b2 = MPI_Wtime();
 
     //if (lc == 0)
+
+    before1 = 0;
+    for(int b = 0; b < BUCKET_COUNT; b++)
+        before1 = before1 + r->inner_hash_data[b].size();
+
+    m1 = MPI_Wtime();
     r->insert(hash_buffer, outer_hash_buffer_size);
+    m2 = MPI_Wtime();
+
+    after1 = 0;
+    for(int b = 0; b < BUCKET_COUNT; b++)
+        after1 = after1 + r->inner_hash_data[b].size();
+
+    delete[] hash_buffer;
+    delete[] process_data;
+
     }
+    t3 = MPI_Wtime();
 
 
     {
@@ -331,22 +366,26 @@ void relation::join(relation* r, int lc)
         /* vector[i] contains the data that needs to be sent to process i */
         std::vector<int> process_data_vector[nprocs];
 
-        for (int j = (number_of_columns - 1); j < join_output.size(); j = j + number_of_columns)
+        c3 = MPI_Wtime();
+        for(int j = (number_of_columns - 1); j < join_output.size(); j = j + number_of_columns)
         {
-            process_size[outer_hash(join_output[j])%nprocs] = process_size[outer_hash(join_output[j])%nprocs] + number_of_columns;
-            for (int k = j; k >= j - (number_of_columns - 1); k--)
-                process_data_vector[outer_hash(join_output[j])%nprocs].push_back(join_output[k]);
+            uint64_t index = join_output[j];
+            process_size[outer_hash(index)%nprocs] = process_size[outer_hash(index)%nprocs] + number_of_columns;
+            for(int k = j; k >= j - (number_of_columns - 1); k--)
+                process_data_vector[outer_hash(index)%nprocs].push_back(join_output[k]);
         }
+        c4 = MPI_Wtime();
 
         int prefix_sum_process_size[nprocs];
         memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
-        for (int i = 1; i < nprocs; i++)
+        for(int i = 1; i < nprocs; i++)
             prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
 
         int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
-        int process_data[process_data_buffer_size];
+        int* process_data = new int[process_data_buffer_size];
+        memset(process_data, 0, process_data_buffer_size * sizeof(int));
 
-        for (int i = 0; i < nprocs; i++)
+        for(int i = 0; i < nprocs; i++)
             memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
 
         /* This step prepares for actual data transfer */
@@ -357,40 +396,89 @@ void relation::join(relation* r, int lc)
 
         int prefix_sum_recv_process_size_buffer[nprocs];
         memset(prefix_sum_recv_process_size_buffer, 0, nprocs * sizeof(int));
-        for (int i = 1; i < nprocs; i++)
+        for(int i = 1; i < nprocs; i++)
             prefix_sum_recv_process_size_buffer[i] = prefix_sum_recv_process_size_buffer[i - 1] + recv_process_size_buffer[i - 1];
 
         /* Sending data to all processes */
         /* What is the buffer size to allocate */
         int outer_hash_buffer_size = 0;
-        for (int i = 0; i < nprocs; i++)
+        for(int i = 0; i < nprocs; i++)
             outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
 
-        int hash_buffer[outer_hash_buffer_size];
-        MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
+        int *hash_buffer = new int[outer_hash_buffer_size];
+        memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
 
-        //if (lc == 0)
+        b3 = MPI_Wtime();
+        MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
+        b4 = MPI_Wtime();
+
+
+        before2 = 0;
+        for(int b = 0; b < BUCKET_COUNT; b++)
+            before2 = before2 + this->inner_hash_data[b].size();
+
+        m3 = MPI_Wtime();
         this->insert(hash_buffer, outer_hash_buffer_size);
+        m4 = MPI_Wtime();
+
+        after2 = 0;
+        for(int b = 0; b < BUCKET_COUNT; b++)
+            after2 = after2 + this->inner_hash_data[b].size();
+
+        delete[] hash_buffer;
+        delete[] process_data;
+
+    }
+    t4 = MPI_Wtime();
+
+    if (rank == 0)
+    {
+        printf("[%d %d] Join Output %f R1 %f [%f + %f] I %f R2 %f [%f + %f] I %f\n", before1, after1, (t2 - t1), (t3 - t2), (b2 - b1), (c2 - c1), (m2 - m1), (t4 - t3), (b4 - b3), (c4 - c3), (m4 - m3));
+        //printf("BA %d %d ---- BA %d %d\n", before1, after1, before2, after2);
     }
 
-    return;
+    int done = 1;
+    if (before1 == after1 && before2 == after2)
+        done = 1;
+    else
+        done = 0;
+
+    int sum = 0;
+    MPI_Allreduce(&done, &sum, 1, MPI_INT, MPI_SUM, comm);
+
+    int fsum = 0;
+    MPI_Allreduce(&after1, &fsum, 1, MPI_INT, MPI_SUM, comm);
+
+    if (sum == nprocs)
+    {
+        if (rank == 0)
+        printf("FINAL output = %d\n", fsum);
+        return 1;
+    }
+    else
+    {
+        //if (rank == 0)
+        //printf("TEMP output = %d\n", fsum);
+        return 0;
+    }
 }
 
 
 
 void relation::insert(int *buffer, int buffer_size)
 {
-    for (int k = 0; k < buffer_size; k = k + number_of_columns)
+    for(int k = 0; k < buffer_size; k = k + number_of_columns)
     {
         int count = 0;
-        int bucket_id = inner_hash(buffer[k]) % BUCKET_COUNT;
+        int bucket_id = inner_hash((uint64_t)buffer[k]) % BUCKET_COUNT;
         //printf("bucket id %d %d\n", bucket_id, buffer[k]);
 
-        for (int i = 0; i < this->inner_hash_data[bucket_id].size(); i = i + number_of_columns)
+        for(int i = 0; i < this->inner_hash_data[bucket_id].size(); i = i + number_of_columns)
         {
             if (this->inner_hash_data[bucket_id][i] == buffer[k] && this->inner_hash_data[bucket_id][i + 1] == buffer[k + 1])
             {
-
+                count = 0;
+                break;
             }
             else
                 count++;
@@ -408,7 +496,8 @@ void relation::insert(int *buffer, int buffer_size)
     return;
 }
 
-static uint32_t inner_hash( uint32_t a)
+#if 0
+static int inner_hash( uint32_t a)
 {
    a = (a+0x7ed55d16) + (a<<12);
    a = (a^0xc761c23c) ^ (a>>19);
@@ -431,4 +520,57 @@ static uint32_t outer_hash( uint32_t a)
    a = (a^0xb55a4f09) ^ (a>>16);
 #endif
    return a;
+}
+#endif
+
+u64 outer_hash(u64 val)
+{
+    const u64 fnvprime = 0x100000001b3;
+    const u64 fnvoffset = 0xcbf29ce484222325;
+
+    u64 chunks[9];
+    chunks[0] = (val >> 56);
+    chunks[1] = (val >> 48) & 0x00000000000000ff;
+    chunks[2] = (val >> 40) & 0x00000000000000ff;
+    chunks[3] = (val >> 32) & 0x00000000000000ff;
+    chunks[4] = (val >> 24) & 0x00000000000000ff;
+    chunks[5] = (val >> 16) & 0x00000000000000ff;
+    chunks[6] = (val >> 8) & 0x00000000000000ff;
+    chunks[7] = val & 0x00000000000000ff;
+    chunks[8] = 0x0000000000000003;
+
+    val = fnvoffset;
+    for (u64 i = 0; i < 9; ++i)
+    {
+        val = val ^ chunks[i];
+        val = val * fnvprime;
+    }
+
+    return val;
+}
+
+u64 inner_hash(u64 val)
+{
+    const u64 fnvprime = 0x100000001b3;
+    const u64 fnvoffset = 0xcbf29ce484222325;
+
+    u64 chunks[9];
+    chunks[0] = (val >> 56);
+    chunks[1] = (val >> 48) & 0x00000000000000ff;
+    chunks[2] = (val >> 40) & 0x00000000000000ff;
+    chunks[3] = (val >> 32) & 0x00000000000000ff;
+    chunks[4] = (val >> 24) & 0x00000000000000ff;
+    chunks[5] = (val >> 16) & 0x00000000000000ff;
+    chunks[6] = (val >> 8) & 0x00000000000000ff;
+    chunks[7] = val & 0x00000000000000ff;
+    chunks[8] = 0x0000000000000017;
+
+    val = fnvoffset;
+    for (u64 i = 0; i < 9; ++i)
+    {
+        val = val ^ chunks[i];
+        val = val * fnvprime;
+    }
+
+    return val;
 }

@@ -1,7 +1,7 @@
 #ifndef RELATION_H
 #define RELATION_H
 
-#define BUCKET_COUNT 4
+#define BUCKET_COUNT 4096
 
 #include <time.h>
 #include <string.h>
@@ -86,7 +86,7 @@ public:
     void print_inner_hash_data(char* filename);
 
 
-    void join(relation* r, int lc);
+    int join(relation* r, int lc);
     void insert(int* buffer, int buffer_size);
 };
 
