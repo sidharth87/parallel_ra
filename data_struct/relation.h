@@ -41,7 +41,6 @@ private:
 
     int number_of_inner_hash_buckets;
     int *inner_hash_bucket_size;
-    //int ***inner_hash_data;
 
     std::vector<int> inner_hash_data[BUCKET_COUNT];
 

@@ -168,8 +168,6 @@ int main(int argc, char **argv)
     int ret = 0;
     do {
         ret = reordered_input.join(&input, loop_count);
-        if (rank == 0)
-            printf("Loop Count %d\n", loop_count);
 
         //char loop_join[1024];
         //sprintf(loop_join, "loop_join_%d_%d.txt", loop_count, rank);
