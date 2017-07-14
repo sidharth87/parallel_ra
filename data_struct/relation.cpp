@@ -225,15 +225,15 @@ void relation::print_inner_hash_data(char* filename)
 
     for(int i = 0; i < BUCKET_COUNT; ++i)
     {
-        fprintf(fp, "[%lld] Bucket size %d\n", (unsigned long long)i, (int)inner_hash_data[i].size());
+        //fprintf(fp, "[%lld] Bucket size %d\n", (unsigned long long)i, (int)inner_hash_data[i].size());
         for(int j = 0; j < inner_hash_data[i].size(); ++j)
         {
-            /*
+            //
             if (j % number_of_columns != number_of_columns - 1)
                 fprintf(fp, "%lld\t", (unsigned long long)inner_hash_data[i][j]);
             else
                 fprintf(fp, "%lld\n", (unsigned long long)inner_hash_data[i][j]);
-            */
+            //
         }
         //fprintf(fp, "\n");
     }
