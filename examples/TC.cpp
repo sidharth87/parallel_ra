@@ -50,6 +50,14 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    int bucket_count = 128;
+    int inner_bucket_count = 128;
+    if (argc == 4)
+    {
+        bucket_count = atoi(argv[2]);
+        inner_bucket_count = atoi(argv[3]);
+    }
+
     int global_row_count;
     int col_count = 2;
 
@@ -100,7 +108,7 @@ int main(int argc, char **argv)
     input.set_number_of_global_rows(global_row_count);
     input.set_number_of_local_rows(local_row_count);
     input.create_init_data();
-    input.create_hash_buckets(128, 128);
+    input.create_hash_buckets(bucket_count, inner_bucket_count);
 
 #if 1
     input.assign_init_data(read_buffer);
@@ -136,7 +144,7 @@ int main(int argc, char **argv)
     reordered_input.set_number_of_global_rows(global_row_count);
     reordered_input.set_number_of_local_rows(local_row_count);
     reordered_input.create_init_data();
-    reordered_input.create_hash_buckets(128, 128);
+    reordered_input.create_hash_buckets(bucket_count, inner_bucket_count);
 
 
     reordered_input.assign_inverted_data(read_buffer);
