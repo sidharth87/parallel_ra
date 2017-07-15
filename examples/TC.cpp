@@ -100,6 +100,8 @@ int main(int argc, char **argv)
     input.set_number_of_global_rows(global_row_count);
     input.set_number_of_local_rows(local_row_count);
     input.create_init_data();
+    input.create_hash_buckets(128, 128);
+
 #if 1
     input.assign_init_data(read_buffer);
 #if 0
@@ -134,6 +136,7 @@ int main(int argc, char **argv)
     reordered_input.set_number_of_global_rows(global_row_count);
     reordered_input.set_number_of_local_rows(local_row_count);
     reordered_input.create_init_data();
+    reordered_input.create_hash_buckets(128, 128);
 
 
     reordered_input.assign_inverted_data(read_buffer);
@@ -184,20 +187,23 @@ int main(int argc, char **argv)
     while (ret != 1);
 
 
+#if 0
     char inner_hash_file_after_join2[1024];
     sprintf(inner_hash_file_after_join2, "inner_hash_data_after_join_%d.txt", rank);
     input.print_inner_hash_data(inner_hash_file_after_join2);
 
-#if 0
+
     char reorderd_inner_hash_file_after_join2[1024];
     sprintf(reorderd_inner_hash_file_after_join2, "reorderd_inner_hash_data_after_join_%d.txt", rank);
     reordered_input.print_inner_hash_data(reorderd_inner_hash_file_after_join2);
 #endif
 
+    reordered_input.free_hash_buckets();
     reordered_input.hash_init_data_free();
     reordered_input.free_init_data();
 
 
+    input.free_hash_buckets();
     input.hash_init_data_free();
     input.free_init_data();
 #endif

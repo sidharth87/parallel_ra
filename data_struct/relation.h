@@ -1,7 +1,8 @@
 #ifndef RELATION_H
 #define RELATION_H
 
-#define BUCKET_COUNT 4096
+//#define BUCKET_COUNT 2048
+//#define INNER_BUCKET_COUNT 8
 
 #include <time.h>
 #include <string.h>
@@ -42,7 +43,9 @@ private:
     int number_of_inner_hash_buckets;
     int *inner_hash_bucket_size;
 
-    std::vector<int> inner_hash_data[BUCKET_COUNT];
+    int bucket_count;
+    int inner_bucket_count;
+    std::vector<int> **inner_hash_data;
 
 
 
@@ -55,6 +58,9 @@ public:
     void set_rank (int r) {rank = r;}
     void set_nprocs (int n) {nprocs = n;}
     void set_comm (MPI_Comm c) {comm = c;}
+
+    void create_hash_buckets(int bc, int ibc);
+    void free_hash_buckets();
 
     /* Initial setup */
     int get_number_of_columns() {return number_of_columns;}
