@@ -369,14 +369,8 @@ int relation::join(relation* r, int lc)
         //if (rank == 0)
         //    printf("(%d %d)\t", bc, bc2);
     }
-    MPI_Barrier(comm);
     j2 = MPI_Wtime();
 
-    //if (rank == 0)
-    //{
-    //    for (int i = 0; i < join_output_bucket_size; i++)
-    //        printf("%d\t", join_output[i].size());
-    //}
 
 
     t1 = MPI_Wtime();
@@ -504,10 +498,9 @@ int relation::join(relation* r, int lc)
         m2 = MPI_Wtime();
 
     }
-    MPI_Barrier(comm);
     t2 = MPI_Wtime();
 
-
+#if 0
     t3 = MPI_Wtime();
     {
         // Send Join output
@@ -629,8 +622,8 @@ int relation::join(relation* r, int lc)
         m4 = MPI_Wtime();
 
     }
+#endif
     delete[] join_output;
-    MPI_Barrier(comm);
     t4 = MPI_Wtime();
 
     cond1 = MPI_Wtime();
@@ -651,19 +644,19 @@ int relation::join(relation* r, int lc)
     int fsum2 = 0;
     MPI_Allreduce(&after2, &fsum2, 1, MPI_INT, MPI_SUM, comm);
 
-    double total_time1 = ((j2 - j1) + (c2 - c1) + (b2 - b1) + (m2 - m1) + (c4 - c3) + (b4 - b3) + (m4 - m3)) + (cond2 - cond1);
-    double total_time2 = (j2 - j1) + (t2 - t1) + (t4 - t3) + (cond2 - cond1);
+    double total_time1 = ((j2 - j1) + (c2 - c1) + (b2 - b1) + (m2 - m1) + (cond2 - cond1));
+    double total_time2 = (j2 - j1) + (t2 - t1) + (cond2 - cond1);
 
     if (sum == nprocs)
     {
         if (rank == 0)
-            printf("[T] %d: [%d %d %f %f %f] Join %f R1 [%f = %f + %f + %f] R2 [%f = %f + %f + %f] C %f\n", lc, fsum, fsum2, (total2 - total1), total_time1, total_time2, (j2 - j1), (t2 - t1), (c2 - c1), (b2 - b1), (m2 - m1), (t4 - t3), (c4 - c3), (b4 - b3), (m4 - m3), (cond2 - cond1));
+            printf("[T] %d: [%d %d %f %f %f] Join %f R1 [%f = %f + %f + %f] C %f\n", lc, fsum, fsum2, (total2 - total1), total_time1, total_time2, (j2 - j1), (t2 - t1), (c2 - c1), (b2 - b1), (m2 - m1), (cond2 - cond1));
         return 1;
     }
     else
     {
         if (rank == 0)
-            printf("[F] %d: [%d %d %f %f %f] Join %f R1 [%f = %f + %f + %f] R2 [%f = %f + %f + %f] C %f\n", lc, fsum, fsum2, (total2 - total1), total_time1, total_time2, (j2 - j1), (t2 - t1), (c2 - c1), (b2 - b1), (m2 - m1), (t4 - t3), (c4 - c3), (b4 - b3), (m4 - m3), (cond2 - cond1));
+            printf("[F] %d: [%d %d %f %f %f] Join %f R1 [%f = %f + %f + %f] C %f\n", lc, fsum, fsum2, (total2 - total1), total_time1, total_time2, (j2 - j1), (t2 - t1), (c2 - c1), (b2 - b1), (m2 - m1), (cond2 - cond1));
         return 0;
     }
 }

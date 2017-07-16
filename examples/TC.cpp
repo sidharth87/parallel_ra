@@ -201,12 +201,12 @@ int main(int argc, char **argv)
     while (ret != 1);
 
 
-#if 0
+
     char inner_hash_file_after_join2[1024];
     sprintf(inner_hash_file_after_join2, "inner_hash_data_after_join_X_%d.txt", rank);
     input.print_inner_hash_data(inner_hash_file_after_join2);
 
-
+#if 0
     char reorderd_inner_hash_file_after_join2[1024];
     sprintf(reorderd_inner_hash_file_after_join2, "reorderd_inner_hash_data_after_join_%d.txt", rank);
     reordered_input.print_inner_hash_data(reorderd_inner_hash_file_after_join2);
