@@ -8,9 +8,9 @@ static u64 outer_hash( u64 a);
 static u64 all_column_hash(u64 a, u64 b);
 
 
-#define SETHASH
+//#define SETHASH
 //#define HASH
-#undef HASH
+//#undef HASH
 //#undef SETHASH
 
 relation::relation()
@@ -243,7 +243,8 @@ void relation::inner_hash_perform()
     for(int i = 0; i < outer_hash_buffer_size / number_of_columns; ++i)
     {
         bucket_id = inner_hash((uint64_t)outer_hash_data[i][hash_column]) % bucket_count;
-        inner_bucket_id = outer_hash((uint64_t)outer_hash_data[i][hash_column] ^ (uint64_t)outer_hash_data[i][hash_column + 1]) % inner_bucket_count;
+        //inner_bucket_id = outer_hash((uint64_t)outer_hash_data[i][hash_column] ^ (uint64_t)outer_hash_data[i][hash_column + 1]) % inner_bucket_count;
+        inner_bucket_id = all_column_hash((uint64_t)outer_hash_data[i][hash_column], (uint64_t)outer_hash_data[i][hash_column + 1]) % inner_bucket_count;
 
         for(int j = 0; j < number_of_columns; ++j)
         {
@@ -285,14 +286,9 @@ int relation::join(relation* r, int lc)
 {
     int lhs;
 
-    int join_output_bucket_size = 2000;//256;
+    int join_output_bucket_size = 10000;//256;
     std::vector<int> *join_output;
     join_output = new std::vector<int>[join_output_bucket_size];
-
-    //for(int i1 = 0; i1 < join_output_bucket_size; i1++)
-    //{
-    //    join_output[i1].reserve(16384);
-    //}
 
     double total1, total2;
     double j1, j2;
@@ -316,9 +312,6 @@ int relation::join(relation* r, int lc)
 
     for(int i1 = 0; i1 < bucket_count; i1++)
     {
-        int bc = 0;
-        int bc2 = 0;
-        int cc = 0;
         for(int i2 = 0; i2 < inner_bucket_count; i2++)
         {
             for(int j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
@@ -332,8 +325,10 @@ int relation::join(relation* r, int lc)
                     {
                         if (lhs == this->inner_hash_data[i1][k1][k2])
                         {
-                            bc++;
-                            hash = outer_hash(this->inner_hash_data[i1][k1][k2 + 1] ^ r->inner_hash_data[i1][i2][j+1]);
+                            uint64_t x = (uint64_t)this->inner_hash_data[i1][k1][k2 + 1];
+                            uint64_t y = (uint64_t)r->inner_hash_data[i1][i2][j+1];
+                            //hash = outer_hash(x ^ y);
+                            hash = all_column_hash(x, y);
 #if defined SETHASH
                 two_tuple temp = {this->inner_hash_data[i1][k1][k2 + 1], r->inner_hash_data[i1][i2][j+1]};
                             output_set.insert(temp);
@@ -358,7 +353,6 @@ int relation::join(relation* r, int lc)
                             {
                                 join_output[index].push_back(this->inner_hash_data[i1][k1][k2 + 1]);
                                 join_output[index].push_back(r->inner_hash_data[i1][i2][j+1]);
-                                bc2++;
                             }
 #endif
                         }
@@ -371,6 +365,34 @@ int relation::join(relation* r, int lc)
     }
     j2 = MPI_Wtime();
 
+#if 0
+    int zcount = 0;
+    int msize = join_output[0].size();
+    int ival = 0;
+    if (rank == 0)
+    {
+        for (int i = 0; i < join_output_bucket_size; i++)
+        {
+            if (join_output[i].size() > msize)
+            {
+                msize = join_output[i].size();
+                ival = i;
+            }
+
+            if (join_output[i].size() == 0)
+                zcount++;
+
+            if (lc == 21 && i == 30)
+            {
+                for (int j = 0; j < join_output[i].size(); j = j + 2)
+                    printf("(%d, %d)\t", join_output[i][j], join_output[i][j + 1]);
+            }
+
+            //printf("%d  \t", join_output[i].size());
+        }
+        printf("[%d] zero count %d max size %d\n", ival, zcount, msize);
+    }
+#endif
 
 
     t1 = MPI_Wtime();
@@ -669,7 +691,8 @@ void relation::insert(int *buffer, int buffer_size)
     {
         int count = 0;
         int bucket_id = inner_hash((uint64_t)buffer[k]) % bucket_count;
-        int inner_bucket_id = outer_hash((uint64_t)buffer[k] ^ (uint64_t)buffer[k + 1]) % inner_bucket_count;
+        //int inner_bucket_id = outer_hash((uint64_t)buffer[k] ^ (uint64_t)buffer[k + 1]) % inner_bucket_count;
+        int inner_bucket_id = all_column_hash((uint64_t)buffer[k], (uint64_t)buffer[k + 1]) % inner_bucket_count;
         //printf("bucket id %d %d\n", bucket_id, buffer[k]);
 
         for(int i = 0; i < this->inner_hash_data[bucket_id][inner_bucket_id].size(); i = i + number_of_columns)
@@ -725,10 +748,11 @@ static uint32_t outer_hash( uint32_t a)
 
 static u64 all_column_hash(u64 a, u64 b)
 {
-    if (a >= b)
-        return a * a + a + b;
-    else
-        return a + b * b;
+    //if (a >= b)
+    //    return a * a + a + b;
+    //else
+    //
+    return a + b * b;
 }
 
 
