@@ -273,7 +273,10 @@ void relation::print_inner_hash_data(char* filename)
 int relation::join(relation* r, int lc)
 {
     int lhs;
-    std::vector<int> join_output;
+
+    int join_output_bucket_size = 8192;
+    std::vector<int> *join_output;
+    join_output = new std::vector<int>[join_output_bucket_size];
 
     double total1, total2;
     double j1, j2;
@@ -285,6 +288,8 @@ int relation::join(relation* r, int lc)
 
     total1 = MPI_Wtime();
     j1 = MPI_Wtime();
+    uint64_t index = 0;
+    int count = 1;
     for(int i1 = 0; i1 < bucket_count; i1++)
     {
         for(int i2 = 0; i2 < inner_bucket_count; i2++)
@@ -298,8 +303,22 @@ int relation::join(relation* r, int lc)
                     {
                         if (lhs == this->inner_hash_data[i1][k1][k2])
                         {
-                            join_output.push_back(this->inner_hash_data[i1][k1][k2 + 1]);
-                            join_output.push_back(r->inner_hash_data[i1][i2][j+1]);
+                            index = outer_hash(this->inner_hash_data[i1][k1][k2 + 1] ^ r->inner_hash_data[i1][i2][j+1]) % join_output_bucket_size;
+                            count = 1;
+                            for (int m = 0; m < join_output[index].size(); m = m + number_of_columns)
+                            {
+                                if (this->inner_hash_data[i1][k1][k2 + 1] == join_output[index][m] && r->inner_hash_data[i1][i2][j+1] == join_output[index][m + 1])
+                                {
+                                    count = 0;
+                                    break;
+                                }
+                            }
+
+                            if (count == 1)
+                            {
+                                join_output[index].push_back(this->inner_hash_data[i1][k1][k2 + 1]);
+                                join_output[index].push_back(r->inner_hash_data[i1][i2][j+1]);
+                            }
                         }
                     }
                 }
@@ -307,6 +326,12 @@ int relation::join(relation* r, int lc)
         }
     }
     j2 = MPI_Wtime();
+
+    //if (rank == 0)
+    //{
+    //    for (int i = 0; i < join_output_bucket_size; i++)
+    //        printf("%d\t", join_output[i].size());
+    //}
 
 
     t1 = MPI_Wtime();
@@ -323,12 +348,15 @@ int relation::join(relation* r, int lc)
         std::vector<int> *process_data_vector;
         process_data_vector = new std::vector<int>[nprocs];
 
-        for(int j = 0; j < join_output.size(); j = j + number_of_columns)
+        for (int i = 0; i < join_output_bucket_size; i++)
         {
-            uint64_t index = outer_hash((uint64_t)join_output[j])%nprocs;
-            process_size[index] = process_size[index] + number_of_columns;
-            for(int k = j; k < j + number_of_columns; k++)
-                process_data_vector[index].push_back(join_output[k]);
+            for(int j = 0; j < join_output[i].size(); j = j + number_of_columns)
+            {
+                uint64_t index = outer_hash((uint64_t)join_output[i][j])%nprocs;
+                process_size[index] = process_size[index] + number_of_columns;
+                for(int k = j; k < j + number_of_columns; k++)
+                    process_data_vector[index].push_back(join_output[i][k]);
+            }
         }
 
         int prefix_sum_process_size[nprocs];
@@ -428,12 +456,15 @@ int relation::join(relation* r, int lc)
 
         //6
         //1, 3, 5
-        for(int j = (number_of_columns - 1); j < join_output.size(); j = j + number_of_columns)
+        for (int i = 0; i < join_output_bucket_size; i++)
         {
-            uint64_t index = outer_hash((uint64_t)join_output[j])%nprocs;
-            process_size[index] = process_size[index] + number_of_columns;
-            for(int k = j; k >= j - (number_of_columns - 1); k--)
-                process_data_vector[index].push_back(join_output[k]);
+            for(int j = (number_of_columns - 1); j < join_output[i].size(); j = j + number_of_columns)
+            {
+                uint64_t index = outer_hash((uint64_t)join_output[i][j])%nprocs;
+                process_size[index] = process_size[index] + number_of_columns;
+                for(int k = j; k >= j - (number_of_columns - 1); k--)
+                    process_data_vector[index].push_back(join_output[i][k]);
+            }
         }
 
         int prefix_sum_process_size[nprocs];
@@ -515,6 +546,7 @@ int relation::join(relation* r, int lc)
         m4 = MPI_Wtime();
 
     }
+    delete[] join_output;
     t4 = MPI_Wtime();
 
     cond1 = MPI_Wtime();
