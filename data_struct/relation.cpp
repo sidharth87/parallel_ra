@@ -6,6 +6,7 @@ static u64 inner_hash( u64 a);
 static u64 outer_hash( u64 a);
 static u64 all_column_hash(u64 a, u64 b);
 
+
 relation::relation()
 {
     rank = 0;
@@ -199,7 +200,11 @@ void relation::hash_init_data()
 #if 1
     int total_row_size = 0;
     MPI_Allreduce(&outer_hash_buffer_size, &total_row_size, 1, MPI_INT, MPI_SUM, comm);
-    assert(total_row_size == global_number_of_rows * number_of_columns);
+    if(total_row_size != global_number_of_rows * number_of_columns)
+    {
+        printf("Incorrect distribution\n");
+        MPI_Abort(comm, -1);
+    }
     printf("[%d] Buffer size after hashing %lld [%lld]\n", rank, (unsigned long long)outer_hash_buffer_size, (unsigned long long)total_row_size);
 #endif
 
@@ -278,6 +283,11 @@ int relation::join(relation* r, int lc)
     std::vector<int> *join_output;
     join_output = new std::vector<int>[join_output_bucket_size];
 
+    for(int i1 = 0; i1 < join_output_bucket_size; i1++)
+    {
+        join_output[i1].reserve(16384);
+    }
+
     double total1, total2;
     double j1, j2;
     double t1, t2, t3, t4;
@@ -290,6 +300,7 @@ int relation::join(relation* r, int lc)
     j1 = MPI_Wtime();
     uint64_t index = 0;
     int count = 1;
+
     for(int i1 = 0; i1 < bucket_count; i1++)
     {
         for(int i2 = 0; i2 < inner_bucket_count; i2++)
@@ -297,6 +308,7 @@ int relation::join(relation* r, int lc)
             for(int j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
             {
                 lhs = r->inner_hash_data[i1][i2][j];
+
                 for(int k1 = 0; k1 < inner_bucket_count; k1++)
                 {
                     for(int k2 = 0; k2 < this->inner_hash_data[i1][k1].size(); k2 = k2 + number_of_columns)

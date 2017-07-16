@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include <mpi.h>
+//#include <cstring>
 
 #undef DEBUG_OUTPUT
 #define LOOP_COUNT 100
@@ -73,10 +74,7 @@ int main(int argc, char **argv)
   parse_args(argc, argv);
 
   recieve_buffer = (int *)malloc(nprocs * count * sizeof(*recieve_buffer));
-  memset(recieve_buffer, 0, (nprocs * count * sizeof(*recieve_buffer)));
-
   send_buffer = (int *)malloc(nprocs * count * sizeof(*send_buffer));
-  memset(send_buffer, 0, (nprocs * count * sizeof(*send_buffer)));
 
   for (i = 0; i < nprocs; i++)
     for (j = 0; j < count; j++)

@@ -1,27 +1,14 @@
 #ifndef RELATION_H
 #define RELATION_H
 
-//#define BUCKET_COUNT 2048
-//#define INNER_BUCKET_COUNT 8
-
-#include <time.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <limits.h>
-#include <arpa/inet.h>
 #include <stdio.h>
-#include <math.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdarg.h>
+#include <string.h>
 #include <stdint.h>
-#include <ctype.h>
+#include <cstdio>
+#include <cstdlib>
 #include <vector>
-
 #include <mpi.h>
+#include "../hash/hashtable.h"
 
 class relation{
 
@@ -46,6 +33,8 @@ private:
     int bucket_count;
     int inner_bucket_count;
     std::vector<int> **inner_hash_data;
+
+    hashtable<u64, u64> hash;
 
 
 

@@ -7,9 +7,9 @@
 #include "compat.h"
 #include "hashtable.h"
 #include <new>
-#include <math>
+#include <math.h>
 
-
+#if 0
 // Reallocating 2-layer hashtable class
 template<typename K, typename V>
 class twohashtable
@@ -52,7 +52,7 @@ public:
     }
 };
 
-
+#endif
 #endif // HASHTABLE__H
 
 

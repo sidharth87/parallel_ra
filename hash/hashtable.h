@@ -7,7 +7,7 @@
 #include "compat.h"
 #include "array.h"
 #include <new>
-//#include <iostream>
+#include <iostream>
 
 // Reallocating hashtable class
 template<typename K, typename V>
