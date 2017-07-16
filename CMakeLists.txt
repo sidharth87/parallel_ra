@@ -1,9 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project (parallel_RA)
 
-if(UNIX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
-endif()
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 
 
 FIND_PACKAGE(MPI REQUIRED)

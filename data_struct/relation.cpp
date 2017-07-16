@@ -9,8 +9,9 @@ static u64 all_column_hash(u64 a, u64 b);
 
 
 #define SETHASH
-#define HASH
-//#undef HASH
+//#define HASH
+#undef HASH
+//#undef SETHASH
 
 relation::relation()
 {
@@ -306,9 +307,13 @@ int relation::join(relation* r, int lc)
     u64 hash = 0;
     u64 index = 0;
     int count = 1;
-
+    
+#if defined HASH
     hashtable<two_tuple, bool> join_hash(512*1024);
-
+#elif defined SETHASH
+    std::unordered_set<two_tuple> output_set;
+#endif
+    
     for(int i1 = 0; i1 < bucket_count; i1++)
     {
         int bc = 0;
@@ -329,7 +334,10 @@ int relation::join(relation* r, int lc)
                         {
                             bc++;
                             hash = outer_hash(this->inner_hash_data[i1][k1][k2 + 1] ^ r->inner_hash_data[i1][i2][j+1]);
-#ifdef HASH
+#if defined SETHASH
+			    two_tuple temp = {this->inner_hash_data[i1][k1][k2 + 1], r->inner_hash_data[i1][i2][j+1]};
+                            output_set.insert(temp);
+#elif defined HASH
                             two_tuple temp = {this->inner_hash_data[i1][k1][k2 + 1], r->inner_hash_data[i1][i2][j+1]};
                             if (join_hash.insert(hash, temp, true) == true)
                                 bc2++;
@@ -385,7 +393,7 @@ int relation::join(relation* r, int lc)
         std::vector<int> *process_data_vector;
         process_data_vector = new std::vector<int>[nprocs];
 
-#ifdef HASH
+#if defined HASH
         for (hashtable<two_tuple, bool>::iter it = join_hash.iterator(); it.more(); it.advance())
         {
             two_tuple temp = it.getK();
@@ -393,6 +401,14 @@ int relation::join(relation* r, int lc)
             process_size[index] = process_size[index] + number_of_columns;
             process_data_vector[index].push_back(temp.a);
             process_data_vector[index].push_back(temp.b);
+        }
+#elif defined SETHASH
+	for (const two_tuple& tup: output_set)
+        {
+            uint64_t index = outer_hash(tup.a)%nprocs;
+            process_size[index] = process_size[index] + number_of_columns;
+            process_data_vector[index].push_back(tup.a);
+            process_data_vector[index].push_back(tup.b);
         }
 #else
         for (int i = 0; i < join_output_bucket_size; i++)

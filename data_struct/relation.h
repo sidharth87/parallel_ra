@@ -9,14 +9,29 @@
 #include <vector>
 #include <mpi.h>
 #include "../hash/hashtable.h"
+#include <unordered_set>
 
 struct two_tuple {
-    u64 a;
-    u64 b;
-    bool operator ==(const two_tuple& o) {
+    uint64_t a;
+    uint64_t b;
+    bool operator ==(const two_tuple& o) const {
         return a==o.a && b==o.b;
     };
 };
+
+namespace std {
+    template <>
+    struct hash<two_tuple>
+    {
+	std::size_t operator()(const two_tuple& tup) const
+	{
+	    uint64_t a = tup.a;
+	    uint64_t b = tup.b;
+            uint64_t h = a ^ b ^ (a >> 6) ^ (b << 5);
+	    return (std::size_t)h;
+	}
+    };
+}
 
 
 
