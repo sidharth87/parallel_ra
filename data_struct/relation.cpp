@@ -1,4 +1,5 @@
 #include "relation.h"
+#include <unordered_set>
 
 typedef uint64_t u64;
 
@@ -7,8 +8,9 @@ static u64 outer_hash( u64 a);
 static u64 all_column_hash(u64 a, u64 b);
 
 
-//#define HASH
-#undef HASH
+#define SETHASH
+#define HASH
+//#undef HASH
 
 relation::relation()
 {
@@ -282,14 +284,14 @@ int relation::join(relation* r, int lc)
 {
     int lhs;
 
-    int join_output_bucket_size = 256;
+    int join_output_bucket_size = 2000;//256;
     std::vector<int> *join_output;
     join_output = new std::vector<int>[join_output_bucket_size];
 
-    for(int i1 = 0; i1 < join_output_bucket_size; i1++)
-    {
-        join_output[i1].reserve(16384);
-    }
+    //for(int i1 = 0; i1 < join_output_bucket_size; i1++)
+    //{
+    //    join_output[i1].reserve(16384);
+    //}
 
     double total1, total2;
     double j1, j2;
@@ -305,7 +307,7 @@ int relation::join(relation* r, int lc)
     u64 index = 0;
     int count = 1;
 
-    hashtable<two_tuple, bool> join_hash(join_output_bucket_size);
+    hashtable<two_tuple, bool> join_hash(512*1024);
 
     for(int i1 = 0; i1 < bucket_count; i1++)
     {
