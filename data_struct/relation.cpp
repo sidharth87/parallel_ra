@@ -232,7 +232,7 @@ void relation::inner_hash_perform()
     for(int i = 0; i < outer_hash_buffer_size / number_of_columns; ++i)
     {
         bucket_id = inner_hash((uint64_t)outer_hash_data[i][hash_column]) % bucket_count;
-        inner_bucket_id = all_column_hash((uint64_t)outer_hash_data[i][hash_column], (uint64_t)outer_hash_data[i][hash_column + 1]) % inner_bucket_count;
+        inner_bucket_id = outer_hash((uint64_t)outer_hash_data[i][hash_column] ^ (uint64_t)outer_hash_data[i][hash_column + 1]) % inner_bucket_count;
 
         for(int j = 0; j < number_of_columns; ++j)
         {
@@ -560,7 +560,7 @@ void relation::insert(int *buffer, int buffer_size)
     {
         int count = 0;
         int bucket_id = inner_hash((uint64_t)buffer[k]) % bucket_count;
-        int inner_bucket_id = all_column_hash((uint64_t)buffer[k], (uint64_t)buffer[k + 1]) % inner_bucket_count;
+        int inner_bucket_id = outer_hash((uint64_t)buffer[k] ^ (uint64_t)buffer[k + 1]) % inner_bucket_count;
         //printf("bucket id %d %d\n", bucket_id, buffer[k]);
 
         for(int i = 0; i < this->inner_hash_data[bucket_id][inner_bucket_id].size(); i = i + number_of_columns)
