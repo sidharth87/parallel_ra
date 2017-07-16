@@ -292,7 +292,6 @@ int relation::join(relation* r, int lc)
             for(int j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
             {
                 lhs = r->inner_hash_data[i1][i2][j];
-
                 for(int k1 = 0; k1 < inner_bucket_count; k1++)
                 {
                     for(int k2 = 0; k2 < this->inner_hash_data[i1][k1].size(); k2 = k2 + number_of_columns)
@@ -336,8 +335,18 @@ int relation::join(relation* r, int lc)
             prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
 
         int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
-        int* process_data = new int[process_data_buffer_size];
-        memset(process_data, 0, process_data_buffer_size * sizeof(int));
+
+        int* process_data;
+        try
+        {
+            process_data = new int[process_data_buffer_size];
+            memset(process_data, 0, process_data_buffer_size * sizeof(int));
+        }
+        catch (const std::bad_alloc& e)
+        {
+            std::cout << "[1] Allocation failed: " << e.what() << '\n';
+            std::cout << "R: " << rank << ", " << outer_hash_buffer_size << "\n";
+        }
 
         for(int i = 0; i < nprocs; i++)
             memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
@@ -364,8 +373,17 @@ int relation::join(relation* r, int lc)
         for(int i = 0; i < nprocs; i++)
             outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
 
-        int *hash_buffer = new int[outer_hash_buffer_size];
-        memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
+        int *hash_buffer;
+        try
+        {
+            hash_buffer = new int[outer_hash_buffer_size];
+            memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
+        }
+        catch (const std::bad_alloc& e)
+        {
+            std::cout << "[2] Allocation failed: " << e.what() << '\n';
+            std::cout << "R: " << rank << ", " << outer_hash_buffer_size << "\n";
+        }
 
 
         MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
@@ -420,8 +438,18 @@ int relation::join(relation* r, int lc)
             prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
 
         int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
-        int* process_data = new int[process_data_buffer_size];
-        memset(process_data, 0, process_data_buffer_size * sizeof(int));
+
+        int* process_data;
+        try
+        {
+            process_data = new int[process_data_buffer_size];
+            memset(process_data, 0, process_data_buffer_size * sizeof(int));
+        }
+        catch (const std::bad_alloc& e)
+        {
+            std::cout << "[3] Allocation failed: " << e.what() << '\n';
+            std::cout << "R: " << rank << ", " << outer_hash_buffer_size << "\n";
+        }
 
         for(int i = 0; i < nprocs; i++)
             memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
@@ -446,8 +474,17 @@ int relation::join(relation* r, int lc)
         for(int i = 0; i < nprocs; i++)
             outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
 
-        int *hash_buffer = new int[outer_hash_buffer_size];
-        memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
+        int *hash_buffer;
+        try
+        {
+            hash_buffer = new int[outer_hash_buffer_size];
+            memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
+        }
+        catch (const std::bad_alloc& e)
+        {
+            std::cout << "[4] Allocation failed: " << e.what() << '\n';
+            std::cout << "R: " << rank << ", " << outer_hash_buffer_size << "\n";
+        }
 
 
         MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
