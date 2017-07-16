@@ -345,7 +345,7 @@ int relation::join(relation* r, int lc)
         catch (const std::bad_alloc& e)
         {
             printf("[1] Allocation failed: %s\n", e.what());
-            printf("R: %d %d\n", rank, outer_hash_buffer_size);
+            printf("R: %d %d\n", rank, process_data_buffer_size);
         }
 
         for(int i = 0; i < nprocs; i++)
@@ -448,7 +448,7 @@ int relation::join(relation* r, int lc)
         catch (const std::bad_alloc& e)
         {
             printf("[3] Allocation failed: %s\n", e.what());
-            printf("R: %d %d\n", rank, outer_hash_buffer_size);
+            printf("R: %d %d\n", rank, process_data_buffer_size);
         }
 
         for(int i = 0; i < nprocs; i++)
