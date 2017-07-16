@@ -344,8 +344,8 @@ int relation::join(relation* r, int lc)
         }
         catch (const std::bad_alloc& e)
         {
-            std::cout << "[1] Allocation failed: " << e.what() << '\n';
-            std::cout << "R: " << rank << ", " << outer_hash_buffer_size << "\n";
+            printf("[1] Allocation failed: %s\n", e.what());
+            printf("R: %d %d\n", rank, outer_hash_buffer_size);
         }
 
         for(int i = 0; i < nprocs; i++)
@@ -381,8 +381,8 @@ int relation::join(relation* r, int lc)
         }
         catch (const std::bad_alloc& e)
         {
-            std::cout << "[2] Allocation failed: " << e.what() << '\n';
-            std::cout << "R: " << rank << ", " << outer_hash_buffer_size << "\n";
+            printf("[2] Allocation failed: %s\n", e.what());
+            printf("R: %d %d\n", rank, outer_hash_buffer_size);
         }
 
 
@@ -447,8 +447,8 @@ int relation::join(relation* r, int lc)
         }
         catch (const std::bad_alloc& e)
         {
-            std::cout << "[3] Allocation failed: " << e.what() << '\n';
-            std::cout << "R: " << rank << ", " << outer_hash_buffer_size << "\n";
+            printf("[3] Allocation failed: %s\n", e.what());
+            printf("R: %d %d\n", rank, outer_hash_buffer_size);
         }
 
         for(int i = 0; i < nprocs; i++)
@@ -482,8 +482,8 @@ int relation::join(relation* r, int lc)
         }
         catch (const std::bad_alloc& e)
         {
-            std::cout << "[4] Allocation failed: " << e.what() << '\n';
-            std::cout << "R: " << rank << ", " << outer_hash_buffer_size << "\n";
+            printf("[4] Allocation failed: %s\n", e.what());
+            printf("R: %d %d\n", rank, outer_hash_buffer_size);
         }
 
 
