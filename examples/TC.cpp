@@ -181,6 +181,12 @@ int main(int argc, char **argv)
     reordered_input.print_inner_hash_data(reorderd_inner_hash_file_after_join);
 #endif
 
+    reordered_input.hash_init_data_free();
+    reordered_input.free_init_data();
+
+    input.hash_init_data_free();
+    input.free_init_data();
+
     int loop_count = 0;
     int ret = 0;
     do {
@@ -207,13 +213,11 @@ int main(int argc, char **argv)
 #endif
 
     reordered_input.free_hash_buckets();
-    reordered_input.hash_init_data_free();
-    reordered_input.free_init_data();
+
 
 
     input.free_hash_buckets();
-    input.hash_init_data_free();
-    input.free_init_data();
+
 #endif
     MPI_Finalize();
     return 0;

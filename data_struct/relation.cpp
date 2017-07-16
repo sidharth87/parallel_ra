@@ -320,7 +320,9 @@ int relation::join(relation* r, int lc)
         memset(process_size, 0, nprocs * sizeof(int));
 
         /* vector[i] contains the data that needs to be sent to process i */
-        std::vector<int> process_data_vector[nprocs];
+        std::vector<int> *process_data_vector;
+        process_data_vector = new std::vector<int>[nprocs];
+
         for(int j = 0; j < join_output.size(); j = j + number_of_columns)
         {
             uint64_t index = outer_hash((uint64_t)join_output[j])%nprocs;
@@ -351,6 +353,7 @@ int relation::join(relation* r, int lc)
         for(int i = 0; i < nprocs; i++)
             memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
 
+        delete[] process_data_vector;
         c2 = MPI_Wtime();
 
 
@@ -420,7 +423,8 @@ int relation::join(relation* r, int lc)
         memset(process_size, 0, nprocs * sizeof(int));
 
         /* vector[i] contains the data that needs to be sent to process i */
-        std::vector<int> process_data_vector[nprocs];
+        std::vector<int> *process_data_vector;
+        process_data_vector = new std::vector<int>[nprocs];
 
         //6
         //1, 3, 5
@@ -453,6 +457,8 @@ int relation::join(relation* r, int lc)
 
         for(int i = 0; i < nprocs; i++)
             memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
+
+        delete[] process_data_vector;
         c4 = MPI_Wtime();
 
 
