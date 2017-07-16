@@ -286,10 +286,10 @@ int relation::join(relation* r, int lc)
     std::vector<int> *join_output;
     join_output = new std::vector<int>[join_output_bucket_size];
 
-    for(int i1 = 0; i1 < join_output_bucket_size; i1++)
-    {
-        join_output[i1].reserve(16384);
-    }
+    //for(int i1 = 0; i1 < join_output_bucket_size; i1++)
+    //{
+    //    join_output[i1].reserve(16384);
+    //}
 
     double total1, total2;
     double j1, j2;
