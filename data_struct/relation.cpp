@@ -325,6 +325,7 @@ int relation::join(relation* r, int lc)
             }
         }
     }
+    MPI_Barrier(comm);
     j2 = MPI_Wtime();
 
     //if (rank == 0)
@@ -439,6 +440,7 @@ int relation::join(relation* r, int lc)
         m2 = MPI_Wtime();
 
     }
+    MPI_Barrier(comm);
     t2 = MPI_Wtime();
 
 
@@ -547,6 +549,7 @@ int relation::join(relation* r, int lc)
 
     }
     delete[] join_output;
+    MPI_Barrier(comm);
     t4 = MPI_Wtime();
 
     cond1 = MPI_Wtime();
