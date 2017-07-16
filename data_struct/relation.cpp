@@ -7,6 +7,9 @@ static u64 outer_hash( u64 a);
 static u64 all_column_hash(u64 a, u64 b);
 
 
+//#define HASH
+#undef HASH
+
 relation::relation()
 {
     rank = 0;
@@ -279,7 +282,7 @@ int relation::join(relation* r, int lc)
 {
     int lhs;
 
-    int join_output_bucket_size = 8192;
+    int join_output_bucket_size = 256;
     std::vector<int> *join_output;
     join_output = new std::vector<int>[join_output_bucket_size];
 
@@ -298,11 +301,17 @@ int relation::join(relation* r, int lc)
 
     total1 = MPI_Wtime();
     j1 = MPI_Wtime();
-    uint64_t index = 0;
+    u64 hash = 0;
+    u64 index = 0;
     int count = 1;
+
+    hashtable<two_tuple, bool> join_hash(join_output_bucket_size);
 
     for(int i1 = 0; i1 < bucket_count; i1++)
     {
+        int bc = 0;
+        int bc2 = 0;
+        int cc = 0;
         for(int i2 = 0; i2 < inner_bucket_count; i2++)
         {
             for(int j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
@@ -311,14 +320,23 @@ int relation::join(relation* r, int lc)
 
                 for(int k1 = 0; k1 < inner_bucket_count; k1++)
                 {
+                    int gc = 0;
                     for(int k2 = 0; k2 < this->inner_hash_data[i1][k1].size(); k2 = k2 + number_of_columns)
                     {
                         if (lhs == this->inner_hash_data[i1][k1][k2])
                         {
-                            index = outer_hash(this->inner_hash_data[i1][k1][k2 + 1] ^ r->inner_hash_data[i1][i2][j+1]) % join_output_bucket_size;
+                            bc++;
+                            hash = outer_hash(this->inner_hash_data[i1][k1][k2 + 1] ^ r->inner_hash_data[i1][i2][j+1]);
+#ifdef HASH
+                            two_tuple temp = {this->inner_hash_data[i1][k1][k2 + 1], r->inner_hash_data[i1][i2][j+1]};
+                            if (join_hash.insert(hash, temp, true) == true)
+                                bc2++;
+#else
                             count = 1;
+                            index = hash % join_output_bucket_size;
                             for (int m = 0; m < join_output[index].size(); m = m + number_of_columns)
                             {
+
                                 if (this->inner_hash_data[i1][k1][k2 + 1] == join_output[index][m] && r->inner_hash_data[i1][i2][j+1] == join_output[index][m + 1])
                                 {
                                     count = 0;
@@ -330,12 +348,16 @@ int relation::join(relation* r, int lc)
                             {
                                 join_output[index].push_back(this->inner_hash_data[i1][k1][k2 + 1]);
                                 join_output[index].push_back(r->inner_hash_data[i1][i2][j+1]);
+                                bc2++;
                             }
+#endif
                         }
                     }
                 }
             }
         }
+        //if (rank == 0)
+        //    printf("(%d %d)\t", bc, bc2);
     }
     MPI_Barrier(comm);
     j2 = MPI_Wtime();
@@ -361,6 +383,16 @@ int relation::join(relation* r, int lc)
         std::vector<int> *process_data_vector;
         process_data_vector = new std::vector<int>[nprocs];
 
+#ifdef HASH
+        for (hashtable<two_tuple, bool>::iter it = join_hash.iterator(); it.more(); it.advance())
+        {
+            two_tuple temp = it.getK();
+            uint64_t index = outer_hash(temp.a)%nprocs;
+            process_size[index] = process_size[index] + number_of_columns;
+            process_data_vector[index].push_back(temp.a);
+            process_data_vector[index].push_back(temp.b);
+        }
+#else
         for (int i = 0; i < join_output_bucket_size; i++)
         {
             for(int j = 0; j < join_output[i].size(); j = j + number_of_columns)
@@ -371,6 +403,8 @@ int relation::join(relation* r, int lc)
                     process_data_vector[index].push_back(join_output[i][k]);
             }
         }
+#endif
+
 
         int prefix_sum_process_size[nprocs];
         memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
@@ -468,8 +502,16 @@ int relation::join(relation* r, int lc)
         std::vector<int> *process_data_vector;
         process_data_vector = new std::vector<int>[nprocs];
 
-        //6
-        //1, 3, 5
+#ifdef HASH
+        for (hashtable<two_tuple, bool>::iter it = join_hash.iterator(); it.more(); it.advance())
+        {
+            two_tuple temp = it.getK();
+            uint64_t index = outer_hash(temp.b)%nprocs;
+            process_size[index] = process_size[index] + number_of_columns;
+            process_data_vector[index].push_back(temp.b);
+            process_data_vector[index].push_back(temp.a);
+        }
+#else
         for (int i = 0; i < join_output_bucket_size; i++)
         {
             for(int j = (number_of_columns - 1); j < join_output[i].size(); j = j + number_of_columns)
@@ -480,6 +522,7 @@ int relation::join(relation* r, int lc)
                     process_data_vector[index].push_back(join_output[i][k]);
             }
         }
+#endif
 
         int prefix_sum_process_size[nprocs];
         memset(prefix_sum_process_size, 0, nprocs * sizeof(int));

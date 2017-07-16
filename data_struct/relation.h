@@ -10,6 +10,16 @@
 #include <mpi.h>
 #include "../hash/hashtable.h"
 
+struct two_tuple {
+    u64 a;
+    u64 b;
+    bool operator ==(const two_tuple& o) {
+        return a==o.a && b==o.b;
+    };
+};
+
+
+
 class relation{
 
 private:
@@ -34,7 +44,6 @@ private:
     int inner_bucket_count;
     std::vector<int> **inner_hash_data;
 
-    hashtable<u64, u64> hash;
 
 
 
