@@ -382,6 +382,7 @@ int relation::join(relation* r, int lc)
             if (join_output[i].size() == 0)
                 zcount++;
 
+#if 0
             if (lc == 21 && i == 30)
             {
                 for (int j = 0; j < join_output[i].size(); j = j + 2)
@@ -389,6 +390,7 @@ int relation::join(relation* r, int lc)
             }
 
             //printf("%d  \t", join_output[i].size());
+#endif
         }
         printf("[%d] zero count %d max size %d\n", ival, zcount, msize);
     }
@@ -748,16 +750,16 @@ static uint32_t outer_hash( uint32_t a)
 
 static u64 all_column_hash(u64 a, u64 b)
 {
-    //if (a >= b)
-    //    return a * a + a + b;
-    //else
-    //
-    return a + b * b;
+    if (a >= b)
+        return a * a + a + b;
+    else
+        return a + b * b;
 }
 
 
 static u64 outer_hash(u64 val)
 {
+    /*
     const u64 fnvprime = 0x100000001b3;
     const u64 fnvoffset = 0xcbf29ce484222325;
 
@@ -778,6 +780,7 @@ static u64 outer_hash(u64 val)
         val = val ^ chunks[i];
         val = val * fnvprime;
     }
+    */
 
     return val;
 }
