@@ -286,7 +286,7 @@ int relation::join(relation* r, int lc)
 {
     int lhs;
 
-    int join_output_bucket_size = 10000;//256;
+    int join_output_bucket_size = 100000;//256;
     std::vector<int> *join_output;
     join_output = new std::vector<int>[join_output_bucket_size];
 
