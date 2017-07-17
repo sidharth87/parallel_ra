@@ -759,6 +759,7 @@ static u64 all_column_hash(u64 a, u64 b)
 
 static u64 outer_hash(u64 val)
 {
+
     const u64 fnvprime = 0x100000001b3;
     const u64 fnvoffset = 0xcbf29ce484222325;
 
@@ -773,17 +774,14 @@ static u64 outer_hash(u64 val)
     chunks[7] = val & 0x00000000000000ff;
     chunks[8] = 0x0000000000000003;
 
-    u64 hash = fnvoffset;
+    val = fnvoffset;
     for (u64 i = 0; i < 9; ++i)
     {
         val = val ^ chunks[i];
         val = val * fnvprime;
     }
 
-    hash = hash ^ (val >> 4);
-    hash = hash ^ (val << 17);
-
-    return hash;
+    return val;
 }
 
 static u64 inner_hash(u64 val)
