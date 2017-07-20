@@ -379,6 +379,8 @@ int relation::join(relation* r, int lc)
             }
         }
 
+        delete[] join_output;
+
         after1 = 0;
         for(int b = 0; b < bucket_count; b++)
             for(int a = 0; a < inner_bucket_count; a++)
