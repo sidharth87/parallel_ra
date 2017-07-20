@@ -370,6 +370,9 @@ int relation::join(relation* r, int lc)
                                     {
                                         r->inner_hash_data[bucket_id][inner_bucket_id].push_back(lv);
                                         r->inner_hash_data[bucket_id][inner_bucket_id].push_back(rv);
+
+                                        this->inner_hash_data[bucket_id][inner_bucket_id].push_back(rv);
+                                        this->inner_hash_data[bucket_id][inner_bucket_id].push_back(lv);
                                     }
                                 }
                             }
