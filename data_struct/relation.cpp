@@ -288,7 +288,7 @@ int relation::join(relation* r, int lc)
 
     int join_output_bucket_size = 100000;//256;
     std::vector<int> *join_output;
-    join_output = new std::vector<int>[join_output_bucket_size];
+    //join_output = new std::vector<int>[join_output_bucket_size];
 
     double total1, total2;
     double j1, j2;
@@ -334,23 +334,23 @@ int relation::join(relation* r, int lc)
                         {
                             if (lhs == this->inner_hash_data[i1][k1][k2])
                             {
-                                count = 1;
-                                index = all_column_hash((uint64_t)this->inner_hash_data[i1][k1][k2 + 1], (uint64_t)r->inner_hash_data[i1][i2][j+1]) % join_output_bucket_size;
-                                for (int m = 0; m < join_output[index].size(); m = m + number_of_columns)
-                                {
+                                //count = 1;
+                                //index = all_column_hash((uint64_t)this->inner_hash_data[i1][k1][k2 + 1], (uint64_t)r->inner_hash_data[i1][i2][j+1]) % join_output_bucket_size;
+                                //for (int m = 0; m < join_output[index].size(); m = m + number_of_columns)
+                                //{
 
-                                    if (this->inner_hash_data[i1][k1][k2 + 1] == join_output[index][m] && r->inner_hash_data[i1][i2][j+1] == join_output[index][m + 1])
-                                    {
-                                        count = 0;
-                                        break;
-                                    }
-                                }
-                                if (count == 1)
+                                //    if (this->inner_hash_data[i1][k1][k2 + 1] == join_output[index][m] && r->inner_hash_data[i1][i2][j+1] == join_output[index][m + 1])
+                                //    {
+                                //        count = 0;
+                                //        break;
+                                //    }
+                                //}
+                                //if (count == 1)
                                 {
                                     lv = this->inner_hash_data[i1][k1][k2 + 1];
                                     rv = r->inner_hash_data[i1][i2][j+1];
-                                    join_output[index].push_back(lv);
-                                    join_output[index].push_back(rv);
+                                    //join_output[index].push_back(lv);
+                                    //join_output[index].push_back(rv);
 
 
                                     int countx = 1;
@@ -379,7 +379,7 @@ int relation::join(relation* r, int lc)
             }
         }
 
-        delete[] join_output;
+        //delete[] join_output;
 
         after1 = 0;
         for(int b = 0; b < bucket_count; b++)
@@ -479,7 +479,9 @@ int relation::join(relation* r, int lc)
 
         switch (data_structure)
         {
+
             case VECTOR_HASH:
+#if 0
             for (int i = 0; i < join_output_bucket_size; i++)
             {
                 for(int j = 0; j < join_output[i].size(); j = j + number_of_columns)
@@ -490,6 +492,7 @@ int relation::join(relation* r, int lc)
                         process_data_vector[index].push_back(join_output[i][k]);
                 }
             }
+#endif
             break;
 
             case LINEAR_PROBING_HASH:
@@ -598,7 +601,7 @@ int relation::join(relation* r, int lc)
     t2 = MPI_Wtime();
 
 
-    delete[] join_output;
+    //delete[] join_output;
     t4 = MPI_Wtime();
 
     cond1 = MPI_Wtime();
