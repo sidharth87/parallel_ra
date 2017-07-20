@@ -303,102 +303,166 @@ int relation::join(relation* r, int lc)
     u64 hash = 0;
     u64 index = 0;
     int count = 1;
+    int before1 = 0, after1 = 0, before2 = 0, after2 = 0;
 
-#if defined HASH
+
     hashtable<two_tuple, bool> join_hash(512*1024);
-#elif defined SETHASH
     std::unordered_set<two_tuple> output_set;
-#endif
 
-    for(int i1 = 0; i1 < bucket_count; i1++)
+    uint64_t lv, rv;
+    int data_structure = VECTOR_HASH;
+    //int data_structure = STD_UNORDERED_MAP;
+    switch (data_structure)
     {
-        for(int i2 = 0; i2 < inner_bucket_count; i2++)
+        case VECTOR_HASH:
+
+        for(int b = 0; b < bucket_count; b++)
+            for(int a = 0; a < inner_bucket_count; a++)
+                before1 = before1 + r->inner_hash_data[b][a].size();
+
+        for(int i1 = 0; i1 < bucket_count; i1++)
         {
-            for(int j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
+            for(int i2 = 0; i2 < inner_bucket_count; i2++)
             {
-                lhs = r->inner_hash_data[i1][i2][j];
-
-                for(int k1 = 0; k1 < inner_bucket_count; k1++)
+                for(int j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
                 {
-                    int gc = 0;
-                    for(int k2 = 0; k2 < this->inner_hash_data[i1][k1].size(); k2 = k2 + number_of_columns)
-                    {
-                        if (lhs == this->inner_hash_data[i1][k1][k2])
-                        {
-                            uint64_t x = (uint64_t)this->inner_hash_data[i1][k1][k2 + 1];
-                            uint64_t y = (uint64_t)r->inner_hash_data[i1][i2][j+1];
-                            //hash = outer_hash(x ^ y);
-                            hash = all_column_hash(x, y);
-#if defined SETHASH
-                two_tuple temp = {this->inner_hash_data[i1][k1][k2 + 1], r->inner_hash_data[i1][i2][j+1]};
-                            output_set.insert(temp);
-#elif defined HASH
-                            two_tuple temp = {this->inner_hash_data[i1][k1][k2 + 1], r->inner_hash_data[i1][i2][j+1]};
-                            if (join_hash.insert(hash, temp, true) == true)
-                                bc2++;
-#else
-                            count = 1;
-                            index = hash % join_output_bucket_size;
-                            for (int m = 0; m < join_output[index].size(); m = m + number_of_columns)
-                            {
+                    lhs = r->inner_hash_data[i1][i2][j];
 
-                                if (this->inner_hash_data[i1][k1][k2 + 1] == join_output[index][m] && r->inner_hash_data[i1][i2][j+1] == join_output[index][m + 1])
+                    for(int k1 = 0; k1 < inner_bucket_count; k1++)
+                    {
+                        for(int k2 = 0; k2 < this->inner_hash_data[i1][k1].size(); k2 = k2 + number_of_columns)
+                        {
+                            if (lhs == this->inner_hash_data[i1][k1][k2])
+                            {
+                                count = 1;
+                                index = all_column_hash((uint64_t)this->inner_hash_data[i1][k1][k2 + 1], (uint64_t)r->inner_hash_data[i1][i2][j+1]) % join_output_bucket_size;
+                                for (int m = 0; m < join_output[index].size(); m = m + number_of_columns)
                                 {
-                                    count = 0;
-                                    break;
+
+                                    if (this->inner_hash_data[i1][k1][k2 + 1] == join_output[index][m] && r->inner_hash_data[i1][i2][j+1] == join_output[index][m + 1])
+                                    {
+                                        count = 0;
+                                        break;
+                                    }
+                                }
+                                if (count == 1)
+                                {
+                                    lv = this->inner_hash_data[i1][k1][k2 + 1];
+                                    rv = r->inner_hash_data[i1][i2][j+1];
+                                    join_output[index].push_back(lv);
+                                    join_output[index].push_back(rv);
+
+
+                                    int countx = 1;
+                                    int bucket_id = inner_hash((uint64_t)lv) % bucket_count;
+                                    int inner_bucket_id = all_column_hash((uint64_t)lv, (uint64_t)rv) % inner_bucket_count;
+
+                                    for(int ix1 = 0; ix1 < r->inner_hash_data[bucket_id][inner_bucket_id].size(); ix1 = ix1 + number_of_columns)
+                                    {
+                                        if (r->inner_hash_data[bucket_id][inner_bucket_id][ix1] == lv && r->inner_hash_data[bucket_id][inner_bucket_id][ix1 + 1] == rv)
+                                        {
+                                            countx = 0;
+                                            break;
+                                        }
+                                    }
+
+                                    if (countx == 1)
+                                    {
+                                        r->inner_hash_data[bucket_id][inner_bucket_id].push_back(lv);
+                                        r->inner_hash_data[bucket_id][inner_bucket_id].push_back(rv);
+                                    }
                                 }
                             }
-
-                            if (count == 1)
-                            {
-                                join_output[index].push_back(this->inner_hash_data[i1][k1][k2 + 1]);
-                                join_output[index].push_back(r->inner_hash_data[i1][i2][j+1]);
-                            }
-#endif
                         }
                     }
                 }
             }
         }
-        //if (rank == 0)
-        //    printf("(%d %d)\t", bc, bc2);
+
+        after1 = 0;
+        for(int b = 0; b < bucket_count; b++)
+            for(int a = 0; a < inner_bucket_count; a++)
+                after1 = after1 + r->inner_hash_data[b][a].size();
+
+        if (before1 == after1)
+        {
+            printf("F [%d] Graph size = %d\n", lc, after1);
+            return 1;
+        }
+        else
+        {
+            printf("T [%d] Graph size = %d\n", lc, after1);
+            return 0;
+        }
+
+
+        break;
+
+        case STD_UNORDERED_MAP:
+
+        for(int i1 = 0; i1 < bucket_count; i1++)
+        {
+            for(int i2 = 0; i2 < inner_bucket_count; i2++)
+            {
+                for(int j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
+                {
+                    lhs = r->inner_hash_data[i1][i2][j];
+
+                    for(int k1 = 0; k1 < inner_bucket_count; k1++)
+                    {
+                        for(int k2 = 0; k2 < this->inner_hash_data[i1][k1].size(); k2 = k2 + number_of_columns)
+                        {
+                            if (lhs == this->inner_hash_data[i1][k1][k2])
+                            {
+                                two_tuple temp = {this->inner_hash_data[i1][k1][k2 + 1], r->inner_hash_data[i1][i2][j+1]};
+                                output_set.insert(temp);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        break;
+
+        case LINEAR_PROBING_HASH:
+
+        for(int i1 = 0; i1 < bucket_count; i1++)
+        {
+            for(int i2 = 0; i2 < inner_bucket_count; i2++)
+            {
+                for(int j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
+                {
+                    lhs = r->inner_hash_data[i1][i2][j];
+
+                    for(int k1 = 0; k1 < inner_bucket_count; k1++)
+                    {
+                        for(int k2 = 0; k2 < this->inner_hash_data[i1][k1].size(); k2 = k2 + number_of_columns)
+                        {
+                            if (lhs == this->inner_hash_data[i1][k1][k2])
+                            {
+                                hash = all_column_hash((uint64_t)this->inner_hash_data[i1][k1][k2 + 1], (uint64_t)r->inner_hash_data[i1][i2][j+1]);
+                                two_tuple temp = {this->inner_hash_data[i1][k1][k2 + 1], r->inner_hash_data[i1][i2][j+1]};
+                                join_hash.insert(hash, temp, true);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        break;
+
+        default:
+        break;
+
     }
     j2 = MPI_Wtime();
 
-#if 0
-    int zcount = 0;
-    int msize = join_output[0].size();
-    int ival = 0;
-    if (rank == 0)
-    {
-        for (int i = 0; i < join_output_bucket_size; i++)
-        {
-            if (join_output[i].size() > msize)
-            {
-                msize = join_output[i].size();
-                ival = i;
-            }
-
-            if (join_output[i].size() == 0)
-                zcount++;
-
-#if 0
-            if (lc == 21 && i == 30)
-            {
-                for (int j = 0; j < join_output[i].size(); j = j + 2)
-                    printf("(%d, %d)\t", join_output[i][j], join_output[i][j + 1]);
-            }
-
-            //printf("%d  \t", join_output[i].size());
-#endif
-        }
-        printf("[%d] zero count %d max size %d\n", ival, zcount, msize);
-    }
-#endif
 
 
     t1 = MPI_Wtime();
-    int before1 = 0, after1 = 0, before2 = 0, after2 = 0;
+
     {
         // Send Join output
         /* process_size[j] stores the number of samples to be sent to process with rank j */
@@ -411,35 +475,42 @@ int relation::join(relation* r, int lc)
         std::vector<int> *process_data_vector;
         process_data_vector = new std::vector<int>[nprocs];
 
-#if defined HASH
-        for (hashtable<two_tuple, bool>::iter it = join_hash.iterator(); it.more(); it.advance())
+        switch (data_structure)
         {
-            two_tuple temp = it.getK();
-            uint64_t index = outer_hash(temp.a)%nprocs;
-            process_size[index] = process_size[index] + number_of_columns;
-            process_data_vector[index].push_back(temp.a);
-            process_data_vector[index].push_back(temp.b);
-        }
-#elif defined SETHASH
-    for (const two_tuple& tup: output_set)
-        {
-            uint64_t index = outer_hash(tup.a)%nprocs;
-            process_size[index] = process_size[index] + number_of_columns;
-            process_data_vector[index].push_back(tup.a);
-            process_data_vector[index].push_back(tup.b);
-        }
-#else
-        for (int i = 0; i < join_output_bucket_size; i++)
-        {
-            for(int j = 0; j < join_output[i].size(); j = j + number_of_columns)
+            case VECTOR_HASH:
+            for (int i = 0; i < join_output_bucket_size; i++)
             {
-                uint64_t index = outer_hash((uint64_t)join_output[i][j])%nprocs;
-                process_size[index] = process_size[index] + number_of_columns;
-                for(int k = j; k < j + number_of_columns; k++)
-                    process_data_vector[index].push_back(join_output[i][k]);
+                for(int j = 0; j < join_output[i].size(); j = j + number_of_columns)
+                {
+                    uint64_t index = outer_hash((uint64_t)join_output[i][j])%nprocs;
+                    process_size[index] = process_size[index] + number_of_columns;
+                    for(int k = j; k < j + number_of_columns; k++)
+                        process_data_vector[index].push_back(join_output[i][k]);
+                }
             }
+            break;
+
+            case LINEAR_PROBING_HASH:
+            for (hashtable<two_tuple, bool>::iter it = join_hash.iterator(); it.more(); it.advance())
+            {
+                two_tuple temp = it.getK();
+                uint64_t index = outer_hash(temp.a)%nprocs;
+                process_size[index] = process_size[index] + number_of_columns;
+                process_data_vector[index].push_back(temp.a);
+                process_data_vector[index].push_back(temp.b);
+            }
+            break;
+
+            case STD_UNORDERED_MAP:
+            for (const two_tuple& tup: output_set)
+            {
+                uint64_t index = outer_hash(tup.a)%nprocs;
+                process_size[index] = process_size[index] + number_of_columns;
+                process_data_vector[index].push_back(tup.a);
+                process_data_vector[index].push_back(tup.b);
+            }
+            break;
         }
-#endif
 
 
         int prefix_sum_process_size[nprocs];
@@ -524,129 +595,7 @@ int relation::join(relation* r, int lc)
     }
     t2 = MPI_Wtime();
 
-#if 0
-    t3 = MPI_Wtime();
-    {
-        // Send Join output
-        /* process_size[j] stores the number of samples to be sent to process with rank j */
-        c3 = MPI_Wtime();
-        int process_size[nprocs];
-        memset(process_size, 0, nprocs * sizeof(int));
 
-        /* vector[i] contains the data that needs to be sent to process i */
-        std::vector<int> *process_data_vector;
-        process_data_vector = new std::vector<int>[nprocs];
-
-#if defined HASH
-        for (hashtable<two_tuple, bool>::iter it = join_hash.iterator(); it.more(); it.advance())
-        {
-            two_tuple temp = it.getK();
-            uint64_t index = outer_hash(temp.b)%nprocs;
-            process_size[index] = process_size[index] + number_of_columns;
-            process_data_vector[index].push_back(temp.b);
-            process_data_vector[index].push_back(temp.a);
-        }
-#elif defined SETHASH
-    for (const two_tuple& tup: output_set)
-        {
-            uint64_t index = outer_hash(tup.b)%nprocs;
-            process_size[index] = process_size[index] + number_of_columns;
-            process_data_vector[index].push_back(tup.b);
-            process_data_vector[index].push_back(tup.a);
-        }
-#else
-        for (int i = 0; i < join_output_bucket_size; i++)
-        {
-            for(int j = (number_of_columns - 1); j < join_output[i].size(); j = j + number_of_columns)
-            {
-                uint64_t index = outer_hash((uint64_t)join_output[i][j])%nprocs;
-                process_size[index] = process_size[index] + number_of_columns;
-                for(int k = j; k >= j - (number_of_columns - 1); k--)
-                    process_data_vector[index].push_back(join_output[i][k]);
-            }
-        }
-#endif
-
-        int prefix_sum_process_size[nprocs];
-        memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
-        for(int i = 1; i < nprocs; i++)
-            prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
-
-        int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
-
-        int* process_data;
-        try
-        {
-            process_data = new int[process_data_buffer_size];
-            memset(process_data, 0, process_data_buffer_size * sizeof(int));
-        }
-        catch (const std::bad_alloc& e)
-        {
-            printf("[3] Allocation failed: %s\n", e.what());
-            printf("R: %d %d\n", rank, process_data_buffer_size);
-        }
-
-        for(int i = 0; i < nprocs; i++)
-            memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
-
-        delete[] process_data_vector;
-        c4 = MPI_Wtime();
-
-
-        /* This step prepares for actual data transfer */
-        /* Every process sends to every other process the amount of data it is going to send */
-        b3 = MPI_Wtime();
-        int recv_process_size_buffer[nprocs];
-        memset(recv_process_size_buffer, 0, nprocs * sizeof(int));
-        MPI_Alltoall(process_size, 1, MPI_INT, recv_process_size_buffer, 1, MPI_INT, comm);
-
-        int prefix_sum_recv_process_size_buffer[nprocs];
-        memset(prefix_sum_recv_process_size_buffer, 0, nprocs * sizeof(int));
-        for(int i = 1; i < nprocs; i++)
-            prefix_sum_recv_process_size_buffer[i] = prefix_sum_recv_process_size_buffer[i - 1] + recv_process_size_buffer[i - 1];
-
-        /* Sending data to all processes */
-        /* What is the buffer size to allocate */
-        int outer_hash_buffer_size = 0;
-        for(int i = 0; i < nprocs; i++)
-            outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
-
-        int *hash_buffer;
-        try
-        {
-            hash_buffer = new int[outer_hash_buffer_size];
-            memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
-        }
-        catch (const std::bad_alloc& e)
-        {
-            printf("[4] Allocation failed: %s\n", e.what());
-            printf("R: %d %d\n", rank, outer_hash_buffer_size);
-        }
-
-
-        MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
-        b4 = MPI_Wtime();
-
-
-        m3 = MPI_Wtime();
-        before2 = 0;
-        for(int b = 0; b < bucket_count; b++)
-            for(int a = 0; a < inner_bucket_count; a++)
-                before2 = before2 + this->inner_hash_data[b][a].size();
-
-        this->insert(hash_buffer, outer_hash_buffer_size);
-
-        after2 = 0;
-        for(int b = 0; b < bucket_count; b++)
-            for(int a = 0; a < inner_bucket_count; a++)
-                after2 = after2 + this->inner_hash_data[b][a].size();
-
-        delete[] hash_buffer;
-        delete[] process_data;
-        m4 = MPI_Wtime();
-
-    }
-#endif
     delete[] join_output;
     t4 = MPI_Wtime();
 

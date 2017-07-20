@@ -11,6 +11,8 @@
 #include "../hash/hashtable.h"
 #include <unordered_set>
 
+enum {VECTOR_HASH, STD_UNORDERED_MAP, LINEAR_PROBING_HASH};
+
 struct two_tuple {
     uint64_t a;
     uint64_t b;
@@ -18,6 +20,7 @@ struct two_tuple {
         return a==o.a && b==o.b;
     };
 };
+
 
 namespace std {
     template <>
