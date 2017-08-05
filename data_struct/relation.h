@@ -46,20 +46,23 @@ private:
     int nprocs;
     MPI_Comm comm;
 
-    int number_of_columns;
-    int global_number_of_rows;
-    int local_number_of_rows;
+    int rule;
+    int data_structure;
+
+    uint number_of_columns;
+    uint global_number_of_rows;
+    uint local_number_of_rows;
 
     int **initial_data;
 
-    int outer_hash_buffer_size;
+    uint outer_hash_buffer_size;
     int **outer_hash_data;
 
-    int number_of_inner_hash_buckets;
+    uint number_of_inner_hash_buckets;
     int *inner_hash_bucket_size;
 
-    int bucket_count;
-    int inner_bucket_count;
+    uint bucket_count;
+    uint inner_bucket_count;
     std::vector<int> **inner_hash_data;
 
 
@@ -87,6 +90,12 @@ public:
 
     int get_number_of_local_rows() {return local_number_of_rows;}
     void set_number_of_local_rows(int rc) {local_number_of_rows = rc;}
+
+    int get_rule() {return rule;}
+    void set_rule(int rc) {rule = rc;}
+
+    int get_ds() {return data_structure;}
+    void set_ds(int rc) {data_structure = rc;}
 
     /* Setting up buffer for first I/O */
     void create_init_data();

@@ -42,6 +42,8 @@ Sequence 2:
 static int rank = 0;
 static int nprocs = 1;
 
+static int rule = 1;
+
 int main(int argc, char **argv)
 {
     // Initializing MPI
@@ -56,6 +58,13 @@ int main(int argc, char **argv)
     {
         bucket_count = atoi(argv[2]);
         inner_bucket_count = atoi(argv[3]);
+    }
+
+    if (argc == 5)
+    {
+        bucket_count = atoi(argv[2]);
+        inner_bucket_count = atoi(argv[3]);
+        rule = atoi(argv[4]);
     }
 
     int global_row_count;
@@ -190,6 +199,7 @@ int main(int argc, char **argv)
     int loop_count = 0;
     int ret = 0;
     do {
+        reordered_input.set_rule(rule);
         ret = reordered_input.join(&input, loop_count);
 
         //char loop_join[1024];
