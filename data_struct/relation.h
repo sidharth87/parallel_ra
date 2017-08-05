@@ -1,26 +1,42 @@
 #ifndef RELATION_H
 #define RELATION_H
 
-#define BUCKET_COUNT 4096
-
-#include <time.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <limits.h>
-#include <arpa/inet.h>
 #include <stdio.h>
-#include <math.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdarg.h>
+#include <string.h>
 #include <stdint.h>
-#include <ctype.h>
+#include <cstdio>
+#include <cstdlib>
 #include <vector>
-
 #include <mpi.h>
+#include "../hash/hashtable.h"
+#include <unordered_set>
+
+enum {VECTOR_HASH, STD_UNORDERED_MAP, LINEAR_PROBING_HASH};
+
+struct two_tuple {
+    uint64_t a;
+    uint64_t b;
+    bool operator ==(const two_tuple& o) const {
+        return a==o.a && b==o.b;
+    };
+};
+
+
+namespace std {
+    template <>
+    struct hash<two_tuple>
+    {
+	std::size_t operator()(const two_tuple& tup) const
+	{
+	    uint64_t a = tup.a;
+	    uint64_t b = tup.b;
+            uint64_t h = a ^ b ^ (a >> 6) ^ (b << 5);
+	    return (std::size_t)h;
+	}
+    };
+}
+
+
 
 class relation{
 
@@ -41,9 +57,11 @@ private:
 
     int number_of_inner_hash_buckets;
     int *inner_hash_bucket_size;
-    //int ***inner_hash_data;
 
-    std::vector<int> inner_hash_data[BUCKET_COUNT];
+    int bucket_count;
+    int inner_bucket_count;
+    std::vector<int> **inner_hash_data;
+
 
 
 
@@ -56,6 +74,9 @@ public:
     void set_rank (int r) {rank = r;}
     void set_nprocs (int n) {nprocs = n;}
     void set_comm (MPI_Comm c) {comm = c;}
+
+    void create_hash_buckets(int bc, int ibc);
+    void free_hash_buckets();
 
     /* Initial setup */
     int get_number_of_columns() {return number_of_columns;}

@@ -50,6 +50,14 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    int bucket_count = 128;
+    int inner_bucket_count = 128;
+    if (argc == 4)
+    {
+        bucket_count = atoi(argv[2]);
+        inner_bucket_count = atoi(argv[3]);
+    }
+
     int global_row_count;
     int col_count = 2;
 
@@ -77,6 +85,9 @@ int main(int argc, char **argv)
     else
       local_row_count = (int) ceil((float)global_row_count / nprocs);
 
+    if (local_row_count < 0)
+        local_row_count = 0;
+
     char data_filename[1024];
     sprintf(data_filename, "%s/data.raw", argv[1]);
     int fp = open(data_filename, O_RDONLY);
@@ -84,7 +95,10 @@ int main(int argc, char **argv)
     pread(fp, read_buffer, local_row_count * col_count * sizeof(int), read_offset * col_count * sizeof(int));
     close(fp);
 
+    //if (rank == 199)
     //printf("Rank %d reads %d elements from %d offset from %s\n", rank, local_row_count, read_offset, data_filename);
+
+
 
     relation input;
     input.set_rank(rank);
@@ -94,7 +108,9 @@ int main(int argc, char **argv)
     input.set_number_of_global_rows(global_row_count);
     input.set_number_of_local_rows(local_row_count);
     input.create_init_data();
+    input.create_hash_buckets(bucket_count, inner_bucket_count);
 
+#if 1
     input.assign_init_data(read_buffer);
 #if 0
     char init_file_name[1024];
@@ -128,6 +144,7 @@ int main(int argc, char **argv)
     reordered_input.set_number_of_global_rows(global_row_count);
     reordered_input.set_number_of_local_rows(local_row_count);
     reordered_input.create_init_data();
+    reordered_input.create_hash_buckets(bucket_count, inner_bucket_count);
 
 
     reordered_input.assign_inverted_data(read_buffer);
@@ -152,7 +169,7 @@ int main(int argc, char **argv)
 #endif
 
 
-#if 1
+
 
     //char inner_hash_file_after_join[1024];
     //sprintf(inner_hash_file_after_join, "inner_hash_data_before_join_%d.txt", rank);
@@ -164,12 +181,16 @@ int main(int argc, char **argv)
     reordered_input.print_inner_hash_data(reorderd_inner_hash_file_after_join);
 #endif
 
+    reordered_input.hash_init_data_free();
+    reordered_input.free_init_data();
+
+    input.hash_init_data_free();
+    input.free_init_data();
+
     int loop_count = 0;
     int ret = 0;
     do {
         ret = reordered_input.join(&input, loop_count);
-        if (rank == 0)
-            printf("Loop Count %d\n", loop_count);
 
         //char loop_join[1024];
         //sprintf(loop_join, "loop_join_%d_%d.txt", loop_count, rank);
@@ -180,9 +201,10 @@ int main(int argc, char **argv)
     while (ret != 1);
 
 
-    //char inner_hash_file_after_join2[1024];
-    //sprintf(inner_hash_file_after_join2, "inner_hash_data_after_join_%d.txt", rank);
-    //input.print_inner_hash_data(inner_hash_file_after_join2);
+
+    char inner_hash_file_after_join2[1024];
+    sprintf(inner_hash_file_after_join2, "inner_hash_data_after_join_X_%d.txt", rank);
+    input.print_inner_hash_data(inner_hash_file_after_join2);
 
 #if 0
     char reorderd_inner_hash_file_after_join2[1024];
@@ -190,13 +212,13 @@ int main(int argc, char **argv)
     reordered_input.print_inner_hash_data(reorderd_inner_hash_file_after_join2);
 #endif
 
-    reordered_input.hash_init_data_free();
-    reordered_input.free_init_data();
+    reordered_input.free_hash_buckets();
+
+
+
+    input.free_hash_buckets();
+
 #endif
-
-    input.hash_init_data_free();
-    input.free_init_data();
-
     MPI_Finalize();
     return 0;
 }

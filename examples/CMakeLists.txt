@@ -2,6 +2,8 @@
 #INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/ra)
 #INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/data_struct)
 
+ADD_EXECUTABLE(data_parser "data_parser.c")
+
 INCLUDE_DIRECTORIES(../core)
 INCLUDE_DIRECTORIES(../ra)
 INCLUDE_DIRECTORIES(../data_struct)
@@ -14,7 +16,11 @@ SET(EXAMPLES_LINK_LIBS ${EXAMPLES_LINK_LIBS} ${MPI_LIBRARIES})
 ADD_EXECUTABLE(TC "TC.cpp")
 TARGET_LINK_LIBRARIES(TC ${EXAMPLES_LINK_LIBS})
 
-ADD_EXECUTABLE(data_parser "data_parser.cpp")
+
+
+
+INCLUDE_DIRECTORIES(../hash)
+ADD_EXECUTABLE(hash_test "hash_test.cpp")
 
 ADD_EXECUTABLE(test_mpi_all_to_all "test_mpi_all_to_all.cpp")
 TARGET_LINK_LIBRARIES(test_mpi_all_to_all ${MPI_LIBRARIES})

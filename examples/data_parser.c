@@ -1,19 +1,9 @@
-#include <time.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <limits.h>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <math.h>
-#include <assert.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <ctype.h>
-
+#include <strings.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 
 int main(int argc, char **argv)
