@@ -315,8 +315,8 @@ int relation::join(relation* r, int lc)
     hashset<two_tuple>* st = new hashset<two_tuple>();
 
     uint64_t lv, rv;
-    //int data_structure = TWO_LEVEL_HASH;
-    int data_structure = VECTOR_HASH;
+    int data_structure = TWO_LEVEL_HASH;
+    //int data_structure = VECTOR_HASH;
     //int data_structure = STD_UNORDERED_MAP;
     //int data_structure = LINEAR_PROBING_HASH;
 
