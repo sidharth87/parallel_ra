@@ -20,7 +20,7 @@ class hashset
     public:
         // contains 3*21bit hashes in the lowest 63bits
         u64 hashes;
-        const K* keys[3];
+        K* keys[3];
         
         hblock() : hashes(0), keys{0,0,0} {}
     };
@@ -68,7 +68,7 @@ class hashset
         delete [] old;
     }
 
-    inline const K* add_internal(const K* key, const u32 h0, const u32 h1)
+    inline K* add_internal(K* key, const u32 h0, const u32 h1)
     {
         // The bottom 3 bits of the pointer are used to code the buffer's size
         u32 code = table[h0].code % 8;
@@ -104,7 +104,7 @@ class hashset
         // Check against the first key with a mask allowing the bottom 21 bits
         // Short-circuit eval of && checks the key deeply iif the hash matches
         const u32 h1ii0 = blocks[bi].hashes & 0x1fffff;
-        const K* kii0 = blocks[bi].keys[0];
+        K* kii0 = blocks[bi].keys[0];
         if (h1 == h1ii0 && (kii0 == key || *kii0 == *key))
             return kii0;
             
@@ -123,7 +123,7 @@ class hashset
 
         // Check against the second key (exactly as before)
         const u32 h1ii1 = (blocks[bi].hashes >> 21) & 0x1fffff;
-        const K* kii1 = blocks[bi].keys[1];
+        K* kii1 = blocks[bi].keys[1];
         if (h1 == h1ii1 && (kii1 == key || *kii1 == *key))
             return kii1;
         
@@ -180,7 +180,7 @@ class hashset
             else
             {
                 const u32 h1ii = (blocks[bi].hashes >> (21*ii)) & 0x1fffff;
-                const K* kii = blocks[bi].keys[ii];
+                K* kii = blocks[bi].keys[ii];
                 if (h1 == h1ii && (kii == key || *kii == *key))
                     return kii;
             }
@@ -272,7 +272,7 @@ class hashset
         }
     }
 
-    inline bool remove_internal(const K* key, const u32 h0, const u32 h1)
+    inline bool remove_internal(K* key, const u32 h0, const u32 h1)
     {
         // The bottom 3 bits of the pointer are used to code the buffer's size
         u32 code = table[h0].code % 8;
@@ -297,7 +297,7 @@ class hashset
             else        
             {   
                 const u32 h1ii = (blocks[bi].hashes >> (21*ii)) & 0x1fffff;
-                const K* kii = blocks[bi].keys[ii];
+                K* kii = blocks[bi].keys[ii];
                 if (h1 == h1ii && (kii == key || *kii == *key))
                 {   
                     // Found the item to remove; remove it and shrink this hblock (pull back the next 0,1, or 2 keys)
@@ -334,7 +334,7 @@ private:
     // The roughly-log_{6-7}() growing schedule of primes used as the 8 sizes
     const u32 to_size[8] = {4,31,191,1151,7753,51151,233777,2*1024*1024};
     // Size of contiguous filled sequence at which to levelup a size; at 3300 it dies
-    const u32 to_levelup[8] = {3, 6, 12, 32, 64, 128, 2013, 3300};
+    const u32 to_levelup[8] = {4, 8, 17, 36, 76, 166, 333, 3300};
 
 public:
     // Constructs an empty table with the smallest node at every bucket
@@ -358,7 +358,7 @@ public:
     // Insert an element into the hashset
     // Either determines another k == key exists in the set
     // and returns a pointer to it, or adds key and returns a pointer to it
-    const K* add(const K* key)
+    K* add(K* key)
     {
         const u64 h = key->hash();
         const u32 h0 = (h >> 21) % buckets;
@@ -374,12 +374,12 @@ public:
         }
     }
 
-    const K* add(const K* key, u64 h)
+    K* add(K* key, u64 h)
     {
         const u32 h0 = (h >> 21) % buckets;
         const u32 h1 = h & 0x1fffff; 
 
-        const K* ret = add_internal(key, h0, h1);
+        K* ret = add_internal(key, h0, h1);
         if (ret == key)
             return key;
         else
@@ -389,12 +389,12 @@ public:
         }        
     }
 
-    const K* add(const K* key, u32 _h0, u32 _h1)
+    K* add(K* key, u32 _h0, u32 _h1)
     {
         const u32 h0 = _h0 % buckets;
         const u32 h1 = _h1 % 0x200000; 
 
-        const K* ret = add_internal(key, h0, h1);
+        K* ret = add_internal(key, h0, h1);
         if (ret == key)
             return key;
         else
@@ -404,7 +404,7 @@ public:
         }        
     }
 
-    const void remove(const K* key)
+    void remove(K* key)
     {
         const u64 h = key->hash();
         const u32 h0 = (h >> 21) % buckets;
@@ -414,7 +414,7 @@ public:
         if (b) --count;
     }
 
-    const void remove(const K* key, u64 h)
+    const void remove(K* key, u64 h)
     {
         const u32 h0 = (h >> 21) % buckets;
         const u32 h1 = h & 0x1fffff; 
@@ -454,7 +454,7 @@ public:
             return *this;
         }
 
-        inline const K* get()
+        inline K* get()
         {
             return blocks[i/3].keys[i%3];
         }
@@ -508,7 +508,7 @@ public:
             }
         }
 
-        inline const K* get()
+        inline K* get()
         {
             return iit->get();
         }

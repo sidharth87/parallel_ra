@@ -717,17 +717,18 @@ e
             case TWO_LEVEL_HASH:
             for (hashset<two_tuple>::full_iter it(*st); it.more(); ++it)
             {
-                const two_tuple* tup = it.get();
+                two_tuple* tup = it.get();
                 uint64_t index = outer_hash(tup->b)%nprocs;
                 process_size[index] = process_size[index] + number_of_columns;
                 process_data_vector[index].push_back(tup->b);
                 process_data_vector[index].push_back(tup->a);
+                // This is the last use of these tuples and of st;
+                delete tup;
             }
+            delete st;
             break;
         }
 
-        // I think we don't need st after this, so delete
-        delete st;
 
 
         int prefix_sum_process_size[nprocs];
