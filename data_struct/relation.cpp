@@ -508,12 +508,12 @@ e
                             if (lhs == this->inner_hash_data[i1][k1][k2])
                             {
                                 hash = all_column_hash((uint64_t)this->inner_hash_data[i1][k1][k2 + 1], (uint64_t)r->inner_hash_data[i1][i2][j+1]);
-                                two_tuple *temp = new two_tuple();
-                                temp->a = (uint64_t)this->inner_hash_data[i1][k1][k2 + 1];
-                                temp->b = (uint64_t)r->inner_hash_data[i1][i2][j+1];
-                                st->add(temp, hash);
-                                //join_hash.insert(hash, temp, true);
-
+                                two_tuple* tup = new two_tuple();
+                                tup->a = (uint64_t)this->inner_hash_data[i1][k1][k2 + 1];
+                                tup->b = (uint64_t)r->inner_hash_data[i1][i2][j+1];
+                                const two_tuple* sttup = st->add(tup, hash);
+                                if (sttup != tup)
+                                    delete tup;
                             }
                         }
                     }
