@@ -327,11 +327,11 @@ class hashset
     }
     
 private:
-    static const u32 buckets = 15111;
+    static const u32 buckets = 90909;
     hblock_ptr table[buckets];
     u64 count;
     // The roughly-log_{6-7}() growing schedule of primes used as the 8 sizes
-    const u32 to_size[8] = {4,31,191,1151,7753,51151,233777,911111};
+    const u32 to_size[8] = {4,31,191,1151,7753,51151,233777,2*1024*1024};
     // Size of contiguous filled sequence at which to levelup a size; at 3300 it dies
     const u32 to_levelup[8] = {3, 6, 12, 18, 27, 51, 151, 3300};
 
