@@ -315,8 +315,8 @@ int relation::join(relation* r, int lc)
     hashset<two_tuple>* st = new hashset<two_tuple>();
 
     uint64_t lv, rv;
-    int data_structure = TWO_LEVEL_HASH;
-    //int data_structure = VECTOR_HASH;
+    //int data_structure = TWO_LEVEL_HASH;
+    int data_structure = VECTOR_HASH;
     //int data_structure = STD_UNORDERED_MAP;
     //int data_structure = LINEAR_PROBING_HASH;
 
@@ -572,7 +572,7 @@ e
             for (hashset<two_tuple>::full_iter it(*st); it.more(); ++it)
             {
                 const two_tuple* tup = it.get();
-                uint64_t index = tup->a %nprocs;
+                uint64_t index = outer_hash(tup->a) %nprocs;
                 process_size[index] = process_size[index] + number_of_columns;
                 process_data_vector[index].push_back(tup->a);
                 process_data_vector[index].push_back(tup->b);
@@ -718,7 +718,7 @@ e
             for (hashset<two_tuple>::full_iter it(*st); it.more(); ++it)
             {
                 const two_tuple* tup = it.get();
-                uint64_t index = tup->b %nprocs;
+                uint64_t index = outer_hash(tup->b)%nprocs;
                 process_size[index] = process_size[index] + number_of_columns;
                 process_data_vector[index].push_back(tup->b);
                 process_data_vector[index].push_back(tup->a);
