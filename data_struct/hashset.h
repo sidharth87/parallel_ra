@@ -436,7 +436,7 @@ public:
             operator++();
         }
 
-        bucket_iter& operator++()
+        inline bucket_iter& operator++()
         {
             // Advance the iterator to be at the next key to return
             ++i;
@@ -445,14 +445,68 @@ public:
             return *this;
         }
 
-        const K* get()
+        inline const K* get()
         {
             return blocks[i/3].keys[i%3];
         }
 
-        bool more()
+        inline bool more()
         {
             return i/3 < bsize;
+        }
+    };
+
+    class full_iter
+    {
+    private:
+        u32 bucket;
+        const hashset<K>& hs;
+        bucket_iter* iit;
+        
+    public:
+        full_iter(const hashset<K>& _hs)
+            : bucket(0), hs(_hs), iit(new bucket_iter(hs,bucket))
+        {
+            while (!iit->more() && ++bucket < buckets)
+            {
+                delete iit;
+                iit = new bucket_iter(hs,bucket);
+            }
+            if (bucket >= buckets)
+            {
+                delete iit;
+                iit = 0;
+            }
+        }
+
+        ~full_iter()
+        {
+            if (iit) delete iit;
+        }
+
+        inline bucket_iter& operator++()
+        {
+            ++(*iit);
+            while (!iit->more() && ++bucket < buckets)
+            {
+                delete iit;
+                iit = new bucket_iter(hs,bucket);
+            }
+            if (bucket >= buckets)
+            {
+                delete iit;
+                iit = 0;
+            }
+        }
+
+        inline const K* get()
+        {
+            return iit->get();
+        }
+
+        inline bool more()
+        {
+            return iit;
         }
     };
 };

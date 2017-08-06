@@ -83,7 +83,7 @@ void testround(u32 round = 0)
     
     const tuple* const t = new tuple(offset+43, offset+43+1, offset+43*43);
     u64 thash = t->hash();
-    hashset<tuple>::bucket_iter it(*st, thash>>32); // creates an iterator for *outer hash* matching tuple x==43
+    hashset<tuple>::full_iter it(*st); // creates an iterator for *outer hash* matching tuple x==43
     for (;it.more(); ++it)
         // ->get() accesses the current value
         // The iterator hits every tuple in a bucket, YOU have to descriminate whether each is really a matching value or not
