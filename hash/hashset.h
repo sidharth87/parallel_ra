@@ -43,7 +43,8 @@ class hashset
             exit(8);
             /*Hmm, for now we exit with some nonzero value, 
               I guess we want some kind of nicer error here*/
-        }
+        } else if (code == 7)
+	    std::cout << "Warning, bucket " << h0 << " overflowed to the largest size!!" << std::endl;
         
         const u32 newsize = to_size[code];
         hblock* const blocks = new hblock[newsize];
@@ -333,7 +334,7 @@ private:
     // The roughly-log_{6-7}() growing schedule of primes used as the 8 sizes
     const u32 to_size[8] = {4,31,191,1151,7753,51151,233777,2*1024*1024};
     // Size of contiguous filled sequence at which to levelup a size; at 3300 it dies
-    const u32 to_levelup[8] = {3, 6, 12, 18, 27, 51, 151, 3300};
+    const u32 to_levelup[8] = {3, 6, 12, 32, 64, 128, 2013, 3300};
 
 public:
     // Constructs an empty table with the smallest node at every bucket
@@ -343,6 +344,14 @@ public:
         {
             table[i].blocks = new hblock[to_size[0]];
             memset(table[i].blocks, 0, to_size[0]*sizeof(hblock));
+        }
+    }
+
+    ~hashset()
+    {
+        for (u32 i = 0; i < buckets; ++i)
+        {
+	    delete [] (reinterpret_cast<hblock*>(table[i].code & 0xffffffffffffff8));
         }
     }
         

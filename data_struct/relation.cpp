@@ -3,9 +3,9 @@
 
 typedef uint64_t u64;
 
-static u64 inner_hash( u64 a);
-static u64 outer_hash( u64 a);
-static u64 all_column_hash(u64 a, u64 b);
+static u64 inner_hash(u64);
+static u64 outer_hash(u64);
+static u64 all_column_hash(u64, u64);
 
 
 //#define SETHASH
@@ -315,10 +315,10 @@ int relation::join(relation* r, int lc)
     hashset<two_tuple>* st = new hashset<two_tuple>();
 
     uint64_t lv, rv;
-    int data_structure = TWO_LEVEL_HASH;
-    //int data_structure = VECTOR_HASH;
-    //int data_structure = STD_UNORDERED_MAP;
-    //int data_structure = LINEAR_PROBING_HASH;
+    const int data_structure = TWO_LEVEL_HASH;
+    //const int data_structure = VECTOR_HASH;
+    //const int data_structure = STD_UNORDERED_MAP;
+    //const int data_structure = LINEAR_PROBING_HASH;
 
 
 
@@ -572,7 +572,7 @@ e
             for (hashset<two_tuple>::full_iter it(*st); it.more(); ++it)
             {
                 const two_tuple* tup = it.get();
-                uint64_t index = outer_hash(tup->a) %nprocs;
+                uint64_t index = outer_hash(tup->a)%nprocs;
                 process_size[index] = process_size[index] + number_of_columns;
                 process_data_vector[index].push_back(tup->a);
                 process_data_vector[index].push_back(tup->b);
@@ -725,6 +725,9 @@ e
             }
             break;
         }
+
+        // I think we don't need st after this, so delete
+        delete st;
 
 
         int prefix_sum_process_size[nprocs];
@@ -884,92 +887,39 @@ void relation::insert(int *buffer, int buffer_size)
     return;
 }
 
-#if 0
-static int inner_hash( uint32_t a)
-{
-   a = (a+0x7ed55d16) + (a<<12);
-   a = (a^0xc761c23c) ^ (a>>19);
-   a = (a+0x165667b1) + (a<<5);
-   a = (a+0xd3a2646c) ^ (a<<9);
-   a = (a+0xfd7046c5) + (a<<3);
-   a = (a^0xb55a4f09) ^ (a>>16);
-   return a;
+
+inline static u64 tunedhash(const u8* bp, const u32 len)
+{ 
+    u64 h0 = 0xb97a19cb491c291d;
+    u64 h1 = 0xc18292e6c9371a17;
+    const u8* const ep = bp+len;
+    while (bp < ep)
+    {
+        h1 ^= *bp;
+        h1 *= 31; 
+        h0 ^= (((u64)*bp) << 17) ^ *bp;
+        h0 *= 0x100000001b3;
+        h0 = (h0 >> 7) | (h0 << 57);
+        ++bp;
+    }
+    
+    return h0 ^ h1;// ^ (h1 << 31);
 }
-
-
-static uint32_t outer_hash( uint32_t a)
-{
-#if 0
-   a = (a+0x7ed55d16) + (a<<12);
-   a = (a^0xc761c23c) ^ (a>>19);
-   a = (a+0x165667b1) + (a<<5);
-   a = (a+0xd3a2646c) ^ (a<<9);
-   a = (a+0xfd7046c5) + (a<<3);
-   a = (a^0xb55a4f09) ^ (a>>16);
-#endif
-   return a;
-}
-#endif
-
 
 static u64 all_column_hash(u64 a, u64 b)
 {
-    if (a >= b)
-        return a * a + a + b;
-    else
-        return a + b * b;
+    const u64 both[2] = {a,b};
+    return tunedhash((u8*)(&both),2*sizeof(u64));
 }
 
 
-static u64 outer_hash(u64 val)
+static u64 outer_hash(const u64 val)
 {
-
-    const u64 fnvprime = 0x100000001b3;
-    const u64 fnvoffset = 0xcbf29ce484222325;
-
-    u64 chunks[9];
-    chunks[0] = (val >> 56);
-    chunks[1] = (val >> 48) & 0x00000000000000ff;
-    chunks[2] = (val >> 40) & 0x00000000000000ff;
-    chunks[3] = (val >> 32) & 0x00000000000000ff;
-    chunks[4] = (val >> 24) & 0x00000000000000ff;
-    chunks[5] = (val >> 16) & 0x00000000000000ff;
-    chunks[6] = (val >> 8) & 0x00000000000000ff;
-    chunks[7] = val & 0x00000000000000ff;
-    chunks[8] = 0x0000000000000003;
-
-    val = fnvoffset;
-    for (u64 i = 0; i < 9; ++i)
-    {
-        val = val ^ chunks[i];
-        val = val * fnvprime;
-    }
-
-    return val;
+    return tunedhash((u8*)(&val),sizeof(u64));
 }
 
 static u64 inner_hash(u64 val)
 {
-    const u64 fnvprime = 0x100000001b3;
-    const u64 fnvoffset = 0xcbf29ce484222325;
-
-    u64 chunks[9];
-    chunks[0] = (val >> 56);
-    chunks[1] = (val >> 48) & 0x00000000000000ff;
-    chunks[2] = (val >> 40) & 0x00000000000000ff;
-    chunks[3] = (val >> 32) & 0x00000000000000ff;
-    chunks[4] = (val >> 24) & 0x00000000000000ff;
-    chunks[5] = (val >> 16) & 0x00000000000000ff;
-    chunks[6] = (val >> 8) & 0x00000000000000ff;
-    chunks[7] = val & 0x00000000000000ff;
-    chunks[8] = 0x0000000000000017;
-
-    val = fnvoffset;
-    for (u64 i = 0; i < 9; ++i)
-    {
-        val = val ^ chunks[i];
-        val = val * fnvprime;
-    }
-
-    return val;
+    val = (val << 23) | (val >> 41);
+    return tunedhash((u8*)(&val),sizeof(u64));
 }
