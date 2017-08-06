@@ -9,9 +9,10 @@
 #include <vector>
 #include <mpi.h>
 #include "../hash/hashtable.h"
+#include "../hash/hashset.h"
 #include <unordered_set>
 
-enum {VECTOR_HASH, STD_UNORDERED_MAP, LINEAR_PROBING_HASH};
+enum {VECTOR_HASH, STD_UNORDERED_MAP, LINEAR_PROBING_HASH, TWO_LEVEL_HASH};
 
 struct two_tuple {
     uint64_t a;

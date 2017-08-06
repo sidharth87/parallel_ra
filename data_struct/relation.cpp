@@ -300,6 +300,8 @@ int relation::join(relation* r, int lc)
     double cond1, cond2;
 
     total1 = MPI_Wtime();
+
+    MPI_Barrier(comm);
     j1 = MPI_Wtime();
     u64 hash = 0;
     u64 index = 0;
@@ -310,10 +312,16 @@ int relation::join(relation* r, int lc)
     hashtable<two_tuple, bool> join_hash(512*1024);
     std::unordered_set<two_tuple> output_set;
 
+    hashset<two_tuple>* st = new hashset<two_tuple>();
+
     uint64_t lv, rv;
+    int data_structure = TWO_LEVEL_HASH;
     //int data_structure = VECTOR_HASH;
-    int data_structure = STD_UNORDERED_MAP;
+    //int data_structure = STD_UNORDERED_MAP;
     //int data_structure = LINEAR_PROBING_HASH;
+
+
+
     switch (data_structure)
     {
         case VECTOR_HASH:
@@ -411,10 +419,14 @@ e
 
         case STD_UNORDERED_MAP:
 
+        //int cc1 = 0;
         for(uint i1 = 0; i1 < bucket_count; i1++)
         {
             for(uint i2 = 0; i2 < inner_bucket_count; i2++)
             {
+                //if (r->inner_hash_data[i1][i2].size() != 0)
+                //    cc1 = cc1 + r->inner_hash_data[i1][i2].size();
+                //printf("[%d %d] %d\n", i1, i2, r->inner_hash_data[i1][i2].size());
                 for(uint j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
                 {
                     lhs = r->inner_hash_data[i1][i2][j];
@@ -433,6 +445,7 @@ e
                 }
             }
         }
+        //printf("CC = %d\n", cc);
 
         break;
 
@@ -464,10 +477,45 @@ e
 
         break;
 
+#if 1
+        case TWO_LEVEL_HASH:
+
+        for(uint i1 = 0; i1 < bucket_count; i1++)
+        {
+            for(uint i2 = 0; i2 < inner_bucket_count; i2++)
+            {
+
+                for(uint j = 0; j < r->inner_hash_data[i1][i2].size(); j = j + number_of_columns)
+                {
+                    lhs = r->inner_hash_data[i1][i2][j];
+
+                    for(uint k1 = 0; k1 < inner_bucket_count; k1++)
+                    {
+                        for(uint k2 = 0; k2 < this->inner_hash_data[i1][k1].size(); k2 = k2 + number_of_columns)
+                        {
+                            if (lhs == this->inner_hash_data[i1][k1][k2])
+                            {
+                                hash = all_column_hash((uint64_t)this->inner_hash_data[i1][k1][k2 + 1], (uint64_t)r->inner_hash_data[i1][i2][j+1]);
+                                two_tuple *temp = new two_tuple();
+                                temp->a = (uint64_t)this->inner_hash_data[i1][k1][k2 + 1];
+                                temp->b = (uint64_t)r->inner_hash_data[i1][i2][j+1];
+                                st->add(temp, hash);
+                                //join_hash.insert(hash, temp, true);
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        break;
+#endif
         default:
         break;
 
     }
+    MPI_Barrier(comm);
     j2 = MPI_Wtime();
 
 
@@ -517,6 +565,17 @@ e
                 process_size[index] = process_size[index] + number_of_columns;
                 process_data_vector[index].push_back(tup.a);
                 process_data_vector[index].push_back(tup.b);
+            }
+            break;
+
+            case TWO_LEVEL_HASH:
+            for (hashset<two_tuple>::full_iter it(*st); it.more(); ++it)
+            {
+                const two_tuple* tup = it.get();
+                uint64_t index = tup->a %nprocs;
+                process_size[index] = process_size[index] + number_of_columns;
+                process_data_vector[index].push_back(tup->a);
+                process_data_vector[index].push_back(tup->b);
             }
             break;
         }
@@ -652,6 +711,17 @@ e
                 process_size[index] = process_size[index] + number_of_columns;
                 process_data_vector[index].push_back(tup.b);
                 process_data_vector[index].push_back(tup.a);
+            }
+            break;
+
+            case TWO_LEVEL_HASH:
+            for (hashset<two_tuple>::full_iter it(*st); it.more(); ++it)
+            {
+                const two_tuple* tup = it.get();
+                uint64_t index = tup->b %nprocs;
+                process_size[index] = process_size[index] + number_of_columns;
+                process_data_vector[index].push_back(tup->b);
+                process_data_vector[index].push_back(tup->a);
             }
             break;
         }
