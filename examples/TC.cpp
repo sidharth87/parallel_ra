@@ -210,9 +210,9 @@ int main(int argc, char **argv)
 
 
 
-    char inner_hash_file_after_join2[1024];
-    sprintf(inner_hash_file_after_join2, "inner_hash_data_after_join_X_%d.txt", rank);
-    input.print_inner_hash_data(inner_hash_file_after_join2);
+    //char inner_hash_file_after_join2[1024];
+    //sprintf(inner_hash_file_after_join2, "inner_hash_data_after_join_X_%d.txt", rank);
+    //input.print_inner_hash_data(inner_hash_file_after_join2);
 
 #if 0
     char reorderd_inner_hash_file_after_join2[1024];
