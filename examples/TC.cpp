@@ -200,9 +200,9 @@ int main(int argc, char **argv)
         reordered_input.set_rule(rule);
         ret = reordered_input.join(&input, loop_count);
 
-        char loop_join[1024];
-        sprintf(loop_join, "loop_join_%d_%d.txt", loop_count, rank);
-        input.print_inner_hash_data(loop_join);
+        //char loop_join[1024];
+        //sprintf(loop_join, "loop_join_%d_%d.txt", loop_count, rank);
+        //input.print_inner_hash_data(loop_join);
 
         loop_count++;
     }
