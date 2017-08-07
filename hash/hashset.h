@@ -358,6 +358,7 @@ public:
     // Insert an element into the hashset
     // Either determines another k == key exists in the set
     // and returns a pointer to it, or adds key and returns a pointer to it
+    /*
     K* add(K* key)
     {
         const u64 h = key->hash();
@@ -388,6 +389,7 @@ public:
             return ret;
         }        
     }
+    */
 
     K* add(K* key, u32 _h0, u32 _h1)
     {
@@ -396,10 +398,12 @@ public:
 
         K* ret = add_internal(key, h0, h1);
         if (ret == key)
-            return key;
-        else
         {
             ++count;
+            return key;
+        }
+        else
+        {
             return ret;
         }        
     }

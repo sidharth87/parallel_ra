@@ -7,8 +7,8 @@ static u64 inner_hash(u64);
 static u64 outer_hash(u64);
 static u64 all_column_hash(u64, u64);
 
-//static int data_structure = TWO_LEVEL_HASH;
-static int data_structure = VECTOR_HASH;
+static int data_structure = TWO_LEVEL_HASH;
+//static int data_structure = VECTOR_HASH;
 
 relation::relation()
 {
@@ -215,8 +215,9 @@ void relation::hash_init_data()
         outer_hash_data[i / number_of_columns][i % number_of_columns] = hash_buffer[i];
 
     int hash_column = 0;
-    int bucket_id;
-    int inner_bucket_id = 0;
+    u32 bucket_id;
+    u32 inner_bucket_id = 0;
+    int cc1 = 0;
     for(uint i = 0; i < outer_hash_buffer_size / number_of_columns; ++i)
     {
         bucket_id = inner_hash((uint64_t)outer_hash_data[i][hash_column]);
@@ -228,6 +229,8 @@ void relation::hash_init_data()
         const two_tuple* sttup = t_inner_hash->add(tup, bucket_id, inner_bucket_id);
         if (sttup != tup)
             delete tup;
+        else
+            cc1++;
 
         s_inner_hash->add(outer_hash_data[i][0], outer_hash_data[i][1], bucket_id, inner_bucket_id);
     }
@@ -291,7 +294,7 @@ int relation::join(relation* r, int lc)
     j1 = MPI_Wtime();
     u32 hash1 = 0;
     u32 hash2 = 0;
-    u64 index = 0;
+    u32 index = 0;
     int count = 1;
     int before1 = 0, after1 = 0, before2 = 0, after2 = 0;
 
@@ -511,7 +514,6 @@ int relation::join(relation* r, int lc)
 
         if (data_structure == VECTOR_HASH)
         {
-
             before1 = 0;
             for(uint b = 0; b < OUTER_BUCKET_COUNT; b++)
                 for(uint a = 0; a < INNER_BUCKET_COUNT; a++)
@@ -526,17 +528,9 @@ int relation::join(relation* r, int lc)
         }
         else
         {
-            before1 = 0;
-            for(uint b = 0; b < r->t_inner_hash->bucket_count(); b++)
-                for (hashset<two_tuple>::bucket_iter it(*(r->t_inner_hash), b); it.more(); ++it)
-                    before1 = before1 + it.get_bsize();
-
+            before1 = r->t_inner_hash->size();
             r->insert(hash_buffer, outer_hash_buffer_size);
-
-            after1 = 0;
-            for(uint b = 0; b < r->t_inner_hash->bucket_count(); b++)
-                for (hashset<two_tuple>::bucket_iter it(*(r->t_inner_hash), b); it.more(); ++it)
-                    after1 = after1 + it.get_bsize();
+            after1 = r->t_inner_hash->size();
         }
 
         delete[] hash_buffer;
@@ -672,17 +666,9 @@ int relation::join(relation* r, int lc)
         }
         else
         {
-            before2 = 0;
-            for(uint b = 0; b < this->t_inner_hash->bucket_count(); b++)
-                for (hashset<two_tuple>::bucket_iter it(*(t_inner_hash), b); it.more(); ++it)
-                    before2 = before2 + it.get_bsize();
-
+            before2 = this->t_inner_hash->size();
             this->insert(hash_buffer, outer_hash_buffer_size);
-
-            after2 = 0;
-            for(uint b = 0; b < this->t_inner_hash->bucket_count(); b++)
-                for (hashset<two_tuple>::bucket_iter it(*(t_inner_hash), b); it.more(); ++it)
-                    after2 = after2 + it.get_bsize();
+            after2 = this->t_inner_hash->size();
         }
 
         delete[] hash_buffer;
@@ -721,13 +707,13 @@ int relation::join(relation* r, int lc)
     if (sum == nprocs)
     {
         if (rank == 0)
-            printf("[T %d] ] [%d %d] %d: [%d %d %f %f] Join %f R1 [%f = %f + %f + %f] R2 [%f = %f + %f + %f] C %f\n", data_structure, insert_t, insert_f, lc, fsum/2, fsum2/2, (total2 - total1), total_time, (j2 - j1), comm1, (c2 - c1), (b2 - b1), (m2 - m1), comm2, (c4 - c3), (b4 - b3), (m4 - m3), (cond2 - cond1));
+            printf("[T %d] ] [%d %d] %d: [%d %d %f %f] Join %f R1 [%f = %f + %f + %f] R2 [%f = %f + %f + %f] C %f\n", data_structure, insert_t, insert_f, lc, fsum, fsum2, (total2 - total1), total_time, (j2 - j1), comm1, (c2 - c1), (b2 - b1), (m2 - m1), comm2, (c4 - c3), (b4 - b3), (m4 - m3), (cond2 - cond1));
         return 1;
     }
     else
     {
         if (rank == 0)
-            printf("[F %d] [%d %d] %d: [%d %d %f %f] Join %f R1 [%f = %f + %f + %f] R2 [%f = %f + %f + %f] C %f\n", data_structure, insert_t, insert_f, lc, fsum/2, fsum2/2, (total2 - total1), total_time, (j2 - j1), comm1, (c2 - c1), (b2 - b1), (m2 - m1), comm2, (c4 - c3), (b4 - b3), (m4 - m3), (cond2 - cond1));
+            printf("[F %d] [%d %d] %d: [%d %d %f %f] Join %f R1 [%f = %f + %f + %f] R2 [%f = %f + %f + %f] C %f\n", data_structure, insert_t, insert_f, lc, fsum, fsum2, (total2 - total1), total_time, (j2 - j1), comm1, (c2 - c1), (b2 - b1), (m2 - m1), comm2, (c4 - c3), (b4 - b3), (m4 - m3), (cond2 - cond1));
         return 0;
     }
 
@@ -741,8 +727,8 @@ void relation::insert(int *buffer, int buffer_size)
 
     for(int k = 0; k < buffer_size; k = k + number_of_columns)
     {
-        int bucket_id = inner_hash((uint64_t)buffer[k]);
-        int inner_bucket_id = all_column_hash((uint64_t)buffer[k], (uint64_t)buffer[k + 1]);
+        u32 bucket_id = inner_hash((uint64_t)buffer[k]);
+        u32 inner_bucket_id = all_column_hash((uint64_t)buffer[k], (uint64_t)buffer[k + 1]);
 
         if (data_structure == TWO_LEVEL_HASH)
         {
