@@ -429,6 +429,12 @@ public:
         return count;
     }
 
+    u32 bucket_count() const
+    {
+        return buckets;
+    }
+
+
     class bucket_iter
     {
     private:
@@ -462,6 +468,11 @@ public:
         inline bool more()
         {
             return i/3 < bsize;
+        }
+
+        inline int get_bsize()
+        {
+            return bsize;
         }
     };
 

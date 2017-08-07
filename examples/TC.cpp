@@ -135,7 +135,6 @@ int main(int argc, char **argv)
     input.print_outer_hash_data(hash_file);
 #endif
 
-    input.inner_hash_perform();
 #if 0
     char inner_hash_file[1024];
     sprintf(inner_hash_file, "inner_hash_data_%d.txt", rank);
@@ -170,7 +169,6 @@ int main(int argc, char **argv)
     reordered_input.print_outer_hash_data(reordered_hash_file);
 #endif
 
-    reordered_input.inner_hash_perform();
 #if 0
     char reordered_inner_hash_file[1024];
     sprintf(reordered_inner_hash_file, "reordered_inner_hash_data_%d.txt", rank);

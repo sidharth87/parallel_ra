@@ -10,9 +10,10 @@
 #include <mpi.h>
 #include "../hash/hashtable.h"
 #include "../hash/hashset.h"
+#include "../hash/twohashtable_vector.h"
 #include <unordered_set>
 
-enum {VECTOR_HASH, STD_UNORDERED_MAP, LINEAR_PROBING_HASH, TWO_LEVEL_HASH};
+enum {VECTOR_HASH, TWO_LEVEL_HASH};
 
 struct two_tuple {
     uint64_t a;
@@ -48,7 +49,7 @@ private:
     MPI_Comm comm;
 
     int rule;
-    int data_structure;
+    //int data_structure;
 
     uint number_of_columns;
     uint global_number_of_rows;
@@ -62,9 +63,12 @@ private:
     uint number_of_inner_hash_buckets;
     int *inner_hash_bucket_size;
 
-    uint bucket_count;
-    uint inner_bucket_count;
-    std::vector<int> **inner_hash_data;
+    //uint bucket_count;
+    //uint inner_bucket_count;
+    //std::vector<int> **inner_hash_data;
+
+    vector_hashset<int, int>* s_inner_hash;
+    hashset<two_tuple>* t_inner_hash;
 
 
 
@@ -95,8 +99,8 @@ public:
     int get_rule() {return rule;}
     void set_rule(int rc) {rule = rc;}
 
-    int get_ds() {return data_structure;}
-    void set_ds(int rc) {data_structure = rc;}
+    //int get_ds() {return data_structure;}
+    //void set_ds(int rc) {data_structure = rc;}
 
     /* Setting up buffer for first I/O */
     void create_init_data();
