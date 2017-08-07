@@ -7,8 +7,8 @@ static u64 inner_hash(u64);
 static u64 outer_hash(u64);
 static u64 all_column_hash(u64, u64);
 
-static int data_structure = TWO_LEVEL_HASH;
-//static int data_structure = VECTOR_HASH;
+//static int data_structure = TWO_LEVEL_HASH;
+static int data_structure = VECTOR_HASH;
 
 relation::relation()
 {
@@ -250,20 +250,20 @@ void relation::hash_init_data_free()
 
 void relation::print_inner_hash_data(char* filename)
 {
-#if 0
+#if 1
     FILE * fp = fopen(filename, "w");
 
-    for(uint i = 0; i < bucket_count; ++i)
+    for(uint i = 0; i < OUTER_BUCKET_COUNT; ++i)
     {
         //fprintf(fp, "[%lld] Bucket size %d\n", (unsigned long long)i, (int)inner_hash_data[i].size());
-        for(uint k = 0; k < inner_bucket_count; ++k)
+        for(uint k = 0; k < INNER_BUCKET_COUNT; ++k)
         {
-            for(uint j = 0; j < inner_hash_data[i][k].size(); ++j)
+            for(uint j = 0; j < s_inner_hash->inner_hash_data[i][k].size(); ++j)
             {
                 if (j % number_of_columns != number_of_columns - 1)
-                    fprintf(fp, "%lld\t", (unsigned long long)inner_hash_data[i][k][j]);
+                    fprintf(fp, "%lld\t", (unsigned long long)s_inner_hash->inner_hash_data[i][k][j]);
                 else
-                    fprintf(fp, "%lld\n", (unsigned long long)inner_hash_data[i][k][j]);
+                    fprintf(fp, "%lld\n", (unsigned long long)s_inner_hash->inner_hash_data[i][k][j]);
             }
         }
     }
@@ -317,10 +317,14 @@ int relation::join(relation* r, int lc)
                             if (r->s_inner_hash->inner_hash_data[i1][i2][j] == this->s_inner_hash->inner_hash_data[i1][k1][k2])
                             {
                                 index = all_column_hash((uint64_t)this->s_inner_hash->inner_hash_data[i1][k1][k2 + 1], (uint64_t)r->s_inner_hash->inner_hash_data[i1][i2][j+1]) % join_output_bucket_size;
+
+
+
                                 if (join_output[index].size() == 0)
                                 {
                                     join_output[index].push_back(this->s_inner_hash->inner_hash_data[i1][k1][k2 + 1]);
                                     join_output[index].push_back(r->s_inner_hash->inner_hash_data[i1][i2][j+1]);
+                                    //printf("H [%d] --> %d %d\n", r->s_inner_hash->inner_hash_data[i1][i2][j], this->s_inner_hash->inner_hash_data[i1][k1][k2 + 1], r->s_inner_hash->inner_hash_data[i1][i2][j+1]);
                                     insert_t++;
                                 }
                                 else
@@ -330,6 +334,7 @@ int relation::join(relation* r, int lc)
                                     {
                                         if (this->s_inner_hash->inner_hash_data[i1][k1][k2 + 1] == join_output[index][m] && r->s_inner_hash->inner_hash_data[i1][i2][j+1] == join_output[index][m + 1])
                                         {
+                                            //printf("M [%d] --> %d %d\n", r->s_inner_hash->inner_hash_data[i1][i2][j], this->s_inner_hash->inner_hash_data[i1][k1][k2 + 1], r->s_inner_hash->inner_hash_data[i1][i2][j+1]);
                                             count = 0;
                                             break;
                                         }
@@ -338,6 +343,7 @@ int relation::join(relation* r, int lc)
                                     {
                                         join_output[index].push_back(this->s_inner_hash->inner_hash_data[i1][k1][k2 + 1]);
                                         join_output[index].push_back(r->s_inner_hash->inner_hash_data[i1][i2][j+1]);
+
                                         insert_t++;
                                     }
                                     else
@@ -666,17 +672,17 @@ int relation::join(relation* r, int lc)
         }
         else
         {
-            before1 = 0;
-            for(uint b = 0; b < r->t_inner_hash->bucket_count(); b++)
+            before2 = 0;
+            for(uint b = 0; b < this->t_inner_hash->bucket_count(); b++)
                 for (hashset<two_tuple>::bucket_iter it(*(t_inner_hash), b); it.more(); ++it)
-                    before1 = before1 + it.get_bsize();
+                    before2 = before2 + it.get_bsize();
 
             this->insert(hash_buffer, outer_hash_buffer_size);
 
-            after1 = 0;
-            for(uint b = 0; b < r->t_inner_hash->bucket_count(); b++)
+            after2 = 0;
+            for(uint b = 0; b < this->t_inner_hash->bucket_count(); b++)
                 for (hashset<two_tuple>::bucket_iter it(*(t_inner_hash), b); it.more(); ++it)
-                    after1 = after1 + it.get_bsize();
+                    after2 = after2 + it.get_bsize();
         }
 
         delete[] hash_buffer;

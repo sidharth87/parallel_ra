@@ -25,7 +25,7 @@ int main(int argc, char **argv)
     sprintf(meta_data_filename, "%s/meta_data.txt", argv[2]);
     printf("Meta data file name %s\n", meta_data_filename);
 
-    int fp_out = open(data_filename, O_CREAT | O_WRONLY);
+    int fp_out;// = open(data_filename, O_CREAT | O_WRONLY);
 
     int row_count = 0;
     int element1;
