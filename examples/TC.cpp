@@ -108,16 +108,16 @@ int main(int argc, char **argv)
     //printf("Rank %d reads %d elements from %d offset from %s\n", rank, local_row_count, read_offset, data_filename);
 
 
-
     relation input;
     input.set_rank(rank);
     input.set_nprocs(nprocs);
     input.set_comm(MPI_COMM_WORLD);
-    input.set_number_of_columns(col_count);
+    //input.set_number_of_columns(col_count);
     input.set_number_of_global_rows(global_row_count);
     input.set_number_of_local_rows(local_row_count);
     input.create_init_data();
-    input.create_hash_buckets(bucket_count, inner_bucket_count);
+    //input.create_hash_buckets(bucket_count, inner_bucket_count);
+    input.create_hash_buckets();
 
 #if 1
     input.assign_init_data(read_buffer);
@@ -148,11 +148,12 @@ int main(int argc, char **argv)
     reordered_input.set_rank(rank);
     reordered_input.set_nprocs(nprocs);
     reordered_input.set_comm(MPI_COMM_WORLD);
-    reordered_input.set_number_of_columns(col_count);
+    //reordered_input.set_number_of_columns(col_count);
     reordered_input.set_number_of_global_rows(global_row_count);
     reordered_input.set_number_of_local_rows(local_row_count);
     reordered_input.create_init_data();
-    reordered_input.create_hash_buckets(bucket_count, inner_bucket_count);
+    //reordered_input.create_hash_buckets(bucket_count, inner_bucket_count);
+    reordered_input.create_hash_buckets();
 
 
     reordered_input.assign_inverted_data(read_buffer);

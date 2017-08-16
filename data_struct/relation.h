@@ -10,10 +10,9 @@
 #include <mpi.h>
 #include "../hash/hashtable.h"
 #include "../hash/hashset.h"
-#include "../hash/twohashtable_vector.h"
-#include <unordered_set>
 
-enum {VECTOR_HASH, TWO_LEVEL_HASH};
+#define COL_COUNT 2
+
 
 struct two_tuple {
     uint64_t a;
@@ -22,21 +21,6 @@ struct two_tuple {
         return a==o.a && b==o.b;
     };
 };
-
-
-namespace std {
-    template <>
-    struct hash<two_tuple>
-    {
-	std::size_t operator()(const two_tuple& tup) const
-	{
-	    uint64_t a = tup.a;
-	    uint64_t b = tup.b;
-            uint64_t h = a ^ b ^ (a >> 6) ^ (b << 5);
-	    return (std::size_t)h;
-	}
-    };
-}
 
 
 
@@ -49,9 +33,7 @@ private:
     MPI_Comm comm;
 
     int rule;
-    //int data_structure;
 
-    uint number_of_columns;
     uint global_number_of_rows;
     uint local_number_of_rows;
 
@@ -63,11 +45,7 @@ private:
     uint number_of_inner_hash_buckets;
     int *inner_hash_bucket_size;
 
-    //uint bucket_count;
-    //uint inner_bucket_count;
-    //std::vector<int> **inner_hash_data;
 
-    vector_hashset<int, int>* s_inner_hash;
     hashset<two_tuple>* t_inner_hash;
 
 
@@ -77,18 +55,15 @@ public:
 
     relation();
     relation(const relation &r);
+    relation(int r, int n, MPI_Comm c, int grc, int lrc);
 
     /* MPI Setup */
     void set_rank (int r) {rank = r;}
     void set_nprocs (int n) {nprocs = n;}
     void set_comm (MPI_Comm c) {comm = c;}
 
-    void create_hash_buckets(int bc, int ibc);
+    void create_hash_buckets();
     void free_hash_buckets();
-
-    /* Initial setup */
-    int get_number_of_columns() {return number_of_columns;}
-    void set_number_of_columns (int c) {number_of_columns = c;}
 
     int get_number_of_global_rows() {return global_number_of_rows;}
     void set_number_of_global_rows (int rc) {global_number_of_rows = rc;}
@@ -110,7 +85,7 @@ public:
     void free_init_data();
 
     /* Setting up outer hash */
-    void hash_init_data();
+    void hash_init_data(int hash_column);
     void print_outer_hash_data(char* filename);
     void hash_init_data_free();
 
@@ -122,7 +97,9 @@ public:
 
 
     int join(relation* r, int lc);
+    int join(relation* r, int gi, relation* dt, int dti, int lc);
     void insert(int* buffer, int buffer_size);
+    void insert(int* buffer, int buffer_size, relation* dt);
 };
 
 
