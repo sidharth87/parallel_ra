@@ -40,6 +40,8 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    double start_time = MPI_Wtime();
+
     // Read from input file
     read_input_relation_from_file_to_local_buffer(argv);
 
@@ -100,8 +102,6 @@ int main(int argc, char **argv)
     //sprintf(dT_hash_file_name, "dT_hased_data_%d.txt", rank);
     //dT.print_inner_hash_data(dT_hash_file_name);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    double start_time = MPI_Wtime();
     int loop_count = 0;
     int ret = 0;
     do {
@@ -176,8 +176,8 @@ static void read_input_relation_from_file_to_local_buffer(char **argv)
     }
     close(fp);
 
-    if (rank == 0)
-        printf("Rank %d reads %d elements from %d offset from %s\n", rank, local_row_count, read_offset, data_filename);
+    //if (rank == 0)
+    //    printf("Rank %d reads %d elements from %d offset from %s\n", rank, local_row_count, read_offset, data_filename);
 
     return;
 }

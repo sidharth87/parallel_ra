@@ -208,7 +208,7 @@ void relation::hash_init_data(int hash_column_index)
         printf("Incorrect distribution\n");
         MPI_Abort(comm, -1);
     }
-    printf("[%d] Buffer size after hashing %lld [%lld]\n", rank, (unsigned long long)outer_hash_buffer_size, (unsigned long long)total_row_size);
+    //printf("[%d] Buffer size after hashing %lld [%lld]\n", rank, (unsigned long long)outer_hash_buffer_size, (unsigned long long)total_row_size);
 #endif
 
     int hash_buffer[outer_hash_buffer_size];
