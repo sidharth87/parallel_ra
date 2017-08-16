@@ -100,7 +100,8 @@ int main(int argc, char **argv)
     //sprintf(dT_hash_file_name, "dT_hased_data_%d.txt", rank);
     //dT.print_inner_hash_data(dT_hash_file_name);
 
-
+    MPI_Barrier(MPI_COMM_WORLD);
+    double start_time = MPI_Wtime();
     int loop_count = 0;
     int ret = 0;
     do {
@@ -113,6 +114,13 @@ int main(int argc, char **argv)
         loop_count++;
     }
     while (ret != 1);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    double end_time = MPI_Wtime();
+
+    if (rank == 0)
+        printf("Total time to complete %f\n", end_time - start_time);
+
 
 
 
