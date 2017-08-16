@@ -115,14 +115,24 @@ int main(int argc, char **argv)
     }
     while (ret != 1);
 
+    char loop_join[1024];
+    sprintf(loop_join, "loop_join_%d_%d.txt", loop_count, rank);
+    T.print_inner_hash_data(loop_join);
+
     MPI_Barrier(MPI_COMM_WORLD);
     double end_time = MPI_Wtime();
 
+    int lTC_edge_count = T.get_hash_size();
+    int gTC_edge_count = 0;
+    MPI_Allreduce(&lTC_edge_count, &gTC_edge_count, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+
+    int lG_edge_count = G.get_hash_size();
+    int gG_edge_count = 0;
+    MPI_Allreduce(&lG_edge_count, &gG_edge_count, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
     if (rank == 0)
-        printf("Total time to complete %f\n", end_time - start_time);
-
-
-
+        printf("Input Edge Count %d TC Edge Count %d Total iterations %d Total time to complete %f\n", gG_edge_count, gTC_edge_count, loop_count, end_time - start_time);
 
     // Finalizing MPI
     MPI_Finalize();

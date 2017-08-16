@@ -361,8 +361,8 @@ public:
         for (u32 i = 0; i < buckets; ++i)
         {
 	    // Delete every object in the hashset
-	    for (bucket_iter it(*this, i); it.more(); ++it)
-		delete it.get();
+            for (bucket_iter it(*this, i); it.more(); ++it)
+                delete it.get();
         }
     }
         
