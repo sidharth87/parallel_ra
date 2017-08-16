@@ -96,8 +96,8 @@ public:
     void print_inner_hash_data(char* filename);
 
 
-    int join(relation* r, int lc);
-    int join(relation* r, int gi, relation* dt, int dti, int lc);
+    //int join(relation* r, int lc);
+    int join(relation* r, relation* dt, int lc);
     void insert(int* buffer, int buffer_size);
     void insert(int* buffer, int buffer_size, relation* dt);
 };
