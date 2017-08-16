@@ -257,7 +257,8 @@ void relation::print_inner_hash_data(char* filename)
         for (hashset<two_tuple>::bucket_iter it(*t_inner_hash, bi); it.more(); ++it)
         {
             const two_tuple* tup = it.get();
-            fprintf(fp,"%lld\t%lld\n", (long long)tup->a, (long long)tup->b);
+            fprintf(fp,"%d\t%d\n", (int)tup->a, (int)tup->b);
+            //printf("XXX %d %d\n", (int)tup->a, (int)tup->b);
         }
     }
 
@@ -293,7 +294,17 @@ int relation::join(relation* G, relation* dt, int lc)
     int insert_f = 0;
     hashset<two_tuple>* st = new hashset<two_tuple>();
 
-    printf("G size %d dt size %d\n", G->t_inner_hash->size(), dt->t_inner_hash->size());
+    for (u32 bi = 0; bi < t_inner_hash->bucket_count(); ++bi)
+    {
+        for (hashset<two_tuple>::bucket_iter it(*t_inner_hash, bi); it.more(); ++it)
+        {
+            const two_tuple* tup = it.get();
+            printf("A [%d] -- %d %d\n", lc, (int)tup->a, (int)tup->b);
+
+        }
+    }
+
+    //printf("G size %d dt size %d\n", G->t_inner_hash->size(), dt->t_inner_hash->size());
     for (u32 i1 = 0; i1 < dt->t_inner_hash->bucket_count(); ++i1)
     {
         for (hashset<two_tuple>::bucket_iter it(*(G->t_inner_hash), i1); it.more(); ++it)
@@ -302,6 +313,7 @@ int relation::join(relation* G, relation* dt, int lc)
             for (hashset<two_tuple>::bucket_iter it2(*(dt->t_inner_hash), i1); it2.more(); ++it2)
             {
                 const two_tuple* tupdT = it2.get();
+                //printf("[%d] %d %d\n", lc, tupG->a, tupdT->b);
                 if (tupG->a == tupdT->b)
                 {
                     hash1 = inner_hash((uint64_t)tupG->b);
@@ -310,6 +322,8 @@ int relation::join(relation* G, relation* dt, int lc)
                     two_tuple* tup3 = new two_tuple();
                     tup3->a = (uint64_t)tupdT->a;
                     tup3->b = (uint64_t)tupG->b;
+
+                    //printf("[%d] %d %d\n", lc, tup3->a, tup3->b);
                     const two_tuple* sttup = st->add(tup3, hash1, hash2);
                     if (sttup != tup3)
                     {
@@ -317,14 +331,16 @@ int relation::join(relation* G, relation* dt, int lc)
                         delete tup3;
                     }
                     else
+                    {
                         insert_t++;
+                    }
                 }
             }
         }
     }
     j2 = MPI_Wtime();
 
-    printf("Join output after project %d\n", st->size());
+    //printf("Join output after project %d\n", st->size());
 
 
     {
@@ -338,10 +354,9 @@ int relation::join(relation* G, relation* dt, int lc)
         /* vector[i] contains the data that needs to be sent to process i */
         std::vector<int> *process_data_vector;
         process_data_vector = new std::vector<int>[nprocs];
-        printf("A\n");
+        int lcount = 0;
         for (u32 bi = 0; bi < st->bucket_count(); ++bi)
         {
-            //printf("B\n");
             for (hashset<two_tuple>::bucket_iter it(*st, bi); it.more(); ++it)
             {
                 const two_tuple* tup = it.get();
@@ -350,8 +365,13 @@ int relation::join(relation* G, relation* dt, int lc)
                 process_size[index] = process_size[index] + COL_COUNT;
                 process_data_vector[index].push_back(tup->a);
                 process_data_vector[index].push_back(tup->b);
+
+                printf("[%d] %d %d\n", lc, tup->a, tup->b);
+                lcount++;
             }
         }
+
+        //printf("Join output iterated after project %d\n", lcount);
 
         delete st;
 
@@ -417,7 +437,6 @@ int relation::join(relation* G, relation* dt, int lc)
         MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
         b2 = MPI_Wtime();
 
-
         m1 = MPI_Wtime();
 
         before1 = this->t_inner_hash->size();
@@ -474,33 +493,51 @@ int relation::join(relation* G, relation* dt, int lc)
 
 void relation::insert(int *buffer, int buffer_size, relation* dt)
 {
-    hashset<two_tuple>* td_temp = new hashset<two_tuple>();
+    hashset<two_tuple>* dt_temp = new hashset<two_tuple>();
+    for (u32 bi = 0; bi < t_inner_hash->bucket_count(); ++bi)
+    {
+        for (hashset<two_tuple>::bucket_iter it(*t_inner_hash, bi); it.more(); ++it)
+        {
+            const two_tuple* tup = it.get();
+            printf("B -- %d %d\n", (int)tup->a, (int)tup->b);
+        }
+    }
 
-    printf("Join output size %d\n", buffer_size);
+    //printf("Join output size %d\n", buffer_size);
     for(int k = 0; k < buffer_size; k = k + COL_COUNT)
     {
-        u32 bucket_id = inner_hash((uint64_t)buffer[k]);
+        u32 bucket_id = inner_hash((uint64_t)buffer[k + 1]);
         u32 inner_bucket_id = all_column_hash((uint64_t)buffer[k], (uint64_t)buffer[k + 1]);
-
 
         two_tuple* tup = new two_tuple();
         tup->a = (uint64_t)buffer[k];
         tup->b = (uint64_t)buffer[k + 1];
+
+        printf("INS %d %d\n", buffer[k], buffer[k+1]);
         const two_tuple* sttup = t_inner_hash->add(tup, bucket_id, inner_bucket_id);
         if (sttup != tup)
             delete tup;
         else
         {
-            td_temp->add(tup, bucket_id, inner_bucket_id);
+            //printf("%lld %lld\n", tup->a, tup->b);
+            dt_temp->add(tup, bucket_id, inner_bucket_id);
         }
-
     }
 
     delete dt->t_inner_hash;
+    dt->t_inner_hash = dt_temp;
 
-    dt->t_inner_hash = td_temp;
+    //printf("dt size = %d\n", dt->t_inner_hash->size());
 
-    printf("dt size = %d\n", dt->t_inner_hash->size());
+    for (u32 bi = 0; bi < t_inner_hash->bucket_count(); ++bi)
+    {
+        for (hashset<two_tuple>::bucket_iter it(*t_inner_hash, bi); it.more(); ++it)
+        {
+            const two_tuple* tup = it.get();
+            printf("C -- %d %d\n", (int)tup->a, (int)tup->b);
+
+        }
+    }
 
     return;
 }
