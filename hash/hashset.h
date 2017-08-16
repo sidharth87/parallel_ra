@@ -352,10 +352,17 @@ public:
     {
         for (u32 i = 0; i < buckets; ++i)
         {
+	    delete [] (reinterpret_cast<hblock*>(table[i].code & 0xffffffffffffff8));
+        }
+    }
+
+    void deleteAllElements()
+    {
+        for (u32 i = 0; i < buckets; ++i)
+        {
 	    // Delete every object in the hashset
 	    for (bucket_iter it(*this, i); it.more(); ++it)
 		delete it.get();
-	    delete [] (reinterpret_cast<hblock*>(table[i].code & 0xffffffffffffff8));
         }
     }
         

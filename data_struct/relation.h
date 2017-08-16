@@ -54,6 +54,7 @@ private:
 public:
 
     relation();
+    ~relation();
     relation(const relation &r);
     relation(int r, int n, MPI_Comm c, int grc, int lrc);
 

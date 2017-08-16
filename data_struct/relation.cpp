@@ -12,6 +12,12 @@ relation::relation()
     nprocs = 1;
 }
 
+relation::~relation()
+{
+    this->t_inner_hash->deleteAllElements();
+    delete this->t_inner_hash;
+}
+
 relation::relation(int r, int n, MPI_Comm c, int grc, int lrc)
 {
     rank = r;
