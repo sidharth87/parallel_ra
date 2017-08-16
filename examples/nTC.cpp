@@ -57,9 +57,9 @@ int main(int argc, char **argv)
     G.free_init_data();
 
     // For debug purpose
-    char G_hash_file_name[1024];
-    sprintf(G_hash_file_name, "G_hased_data_%d.txt", rank);
-    G.print_inner_hash_data(G_hash_file_name);
+    //char G_hash_file_name[1024];
+    //sprintf(G_hash_file_name, "G_hased_data_%d.txt", rank);
+    //G.print_inner_hash_data(G_hash_file_name);
 
 
 
@@ -77,9 +77,9 @@ int main(int argc, char **argv)
     T.free_init_data();
 
     // For debug purpose
-    char T_hash_file_name[1024];
-    sprintf(T_hash_file_name, "T_hased_data_%d.txt", rank);
-    T.print_inner_hash_data(T_hash_file_name);
+    //char T_hash_file_name[1024];
+    //sprintf(T_hash_file_name, "T_hased_data_%d.txt", rank);
+    //T.print_inner_hash_data(T_hash_file_name);
 
 
     // Create output (TC) relation
@@ -96,9 +96,9 @@ int main(int argc, char **argv)
     dT.free_init_data();
 
     // For debug purpose
-    char dT_hash_file_name[1024];
-    sprintf(dT_hash_file_name, "dT_hased_data_%d.txt", rank);
-    dT.print_inner_hash_data(dT_hash_file_name);
+    //char dT_hash_file_name[1024];
+    //sprintf(dT_hash_file_name, "dT_hased_data_%d.txt", rank);
+    //dT.print_inner_hash_data(dT_hash_file_name);
 
 
     int loop_count = 0;

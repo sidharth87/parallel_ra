@@ -300,6 +300,7 @@ int relation::join(relation* G, relation* dt, int lc)
     int insert_f = 0;
     hashset<two_tuple>* st = new hashset<two_tuple>();
 
+    /*
     for (u32 bi = 0; bi < t_inner_hash->bucket_count(); ++bi)
     {
         for (hashset<two_tuple>::bucket_iter it(*t_inner_hash, bi); it.more(); ++it)
@@ -309,6 +310,7 @@ int relation::join(relation* G, relation* dt, int lc)
 
         }
     }
+    */
 
     //printf("G size %d dt size %d\n", G->t_inner_hash->size(), dt->t_inner_hash->size());
     for (u32 i1 = 0; i1 < dt->t_inner_hash->bucket_count(); ++i1)
@@ -372,7 +374,7 @@ int relation::join(relation* G, relation* dt, int lc)
                 process_data_vector[index].push_back(tup->a);
                 process_data_vector[index].push_back(tup->b);
 
-                printf("[%d] %d %d\n", lc, tup->a, tup->b);
+                //printf("[%d] %d %d\n", lc, tup->a, tup->b);
                 lcount++;
             }
         }
@@ -500,6 +502,7 @@ int relation::join(relation* G, relation* dt, int lc)
 void relation::insert(int *buffer, int buffer_size, relation* dt)
 {
     hashset<two_tuple>* dt_temp = new hashset<two_tuple>();
+    /*
     for (u32 bi = 0; bi < t_inner_hash->bucket_count(); ++bi)
     {
         for (hashset<two_tuple>::bucket_iter it(*t_inner_hash, bi); it.more(); ++it)
@@ -508,6 +511,7 @@ void relation::insert(int *buffer, int buffer_size, relation* dt)
             printf("B -- %d %d\n", (int)tup->a, (int)tup->b);
         }
     }
+    */
 
     //printf("Join output size %d\n", buffer_size);
     for(int k = 0; k < buffer_size; k = k + COL_COUNT)
@@ -519,7 +523,7 @@ void relation::insert(int *buffer, int buffer_size, relation* dt)
         tup->a = (uint64_t)buffer[k];
         tup->b = (uint64_t)buffer[k + 1];
 
-        printf("INS %d %d\n", buffer[k], buffer[k+1]);
+        //printf("INS %d %d\n", buffer[k], buffer[k+1]);
         const two_tuple* sttup = t_inner_hash->add(tup, bucket_id, inner_bucket_id);
         if (sttup != tup)
             delete tup;
@@ -535,6 +539,7 @@ void relation::insert(int *buffer, int buffer_size, relation* dt)
 
     //printf("dt size = %d\n", dt->t_inner_hash->size());
 
+    /*
     for (u32 bi = 0; bi < t_inner_hash->bucket_count(); ++bi)
     {
         for (hashset<two_tuple>::bucket_iter it(*t_inner_hash, bi); it.more(); ++it)
@@ -544,6 +549,7 @@ void relation::insert(int *buffer, int buffer_size, relation* dt)
 
         }
     }
+    */
 
     return;
 }
