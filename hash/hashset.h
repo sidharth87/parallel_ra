@@ -338,7 +338,8 @@ private:
 
 public:
     // Constructs an empty table with the smallest node at every bucket
-    hashset() 
+    hashset()
+	: count(0)
     {
         for (u32 i = 0; i < buckets; ++i)
         {
@@ -351,6 +352,9 @@ public:
     {
         for (u32 i = 0; i < buckets; ++i)
         {
+	    // Delete every object in the hashset
+	    for (bucket_iter it(*this, i); it.more(); ++it)
+		delete it.get();
 	    delete [] (reinterpret_cast<hblock*>(table[i].code & 0xffffffffffffff8));
         }
     }
@@ -407,7 +411,7 @@ public:
             return ret;
         }        
     }
-
+    /*
     void remove(K* key)
     {
         const u64 h = key->hash();
@@ -426,7 +430,7 @@ public:
         bool b = remove_internal(key, h0, h1);
         if (b) --count;
     }
-    
+    */
     // Returns the number of keys
     u64 size() const
     {
@@ -459,7 +463,11 @@ public:
         {
             // Advance the iterator to be at the next key to return
             ++i;
-            while (i/3 < bsize && blocks[i/3].keys[i%3] == 0) ++i;
+            while (i/3 < bsize && blocks[i/3].keys[i%3] == 0)
+	    {
+		std::cout << "bsize, i, key: " << bsize << ", " << i << ", " << blocks[i/3].keys[i%3] << std::endl;
+	        ++i;
+	    }
             
             return *this;
         }
