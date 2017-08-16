@@ -465,7 +465,7 @@ public:
             ++i;
             while (i/3 < bsize && blocks[i/3].keys[i%3] == 0)
 	    {
-		std::cout << "bsize, i, key: " << bsize << ", " << i << ", " << blocks[i/3].keys[i%3] << std::endl;
+		//std::cout << "bsize, i, key: " << bsize << ", " << i << ", " << blocks[i/3].keys[i%3] << std::endl;
 	        ++i;
 	    }
             
