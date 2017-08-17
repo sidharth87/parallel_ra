@@ -292,7 +292,6 @@ int relation::join(relation* G, relation* dt, int lc)
     // timers
     double j1 = 0, j2 = 0;
     double b1 = 0, b2 = 0;
-    double c1 = 0, c2 = 0;
     double m1 = 0, m2 = 0;
     double cond1 = 0, cond2 = 0;
     double total1 = 0, total2 = 0;
@@ -357,7 +356,7 @@ int relation::join(relation* G, relation* dt, int lc)
 
 
 
-    c1 = MPI_Wtime();
+    b1 = MPI_Wtime();
 
     int prefix_sum_process_size[nprocs];
     memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
@@ -381,12 +380,10 @@ int relation::join(relation* G, relation* dt, int lc)
         memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
 
     delete[] process_data_vector;
-    c2 = MPI_Wtime();
 
 
     /* This step prepares for actual data transfer */
     /* Every process sends to every other process the amount of data it is going to send */
-    b1 = MPI_Wtime();
 
     int recv_process_size_buffer[nprocs];
     memset(recv_process_size_buffer, 0, nprocs * sizeof(int));
@@ -441,21 +438,18 @@ int relation::join(relation* G, relation* dt, int lc)
 
     total2 = MPI_Wtime();
 
-    double join_time = j2 - j1;
-    double comm1 = (c2 - c1) + (b2 - b1) + (m2 - m1);
-    double cond = (cond2 - cond1);
-    double total_time = join_time + comm1 + cond;
+    double total_time = (j2 - j1) + (b2 - b1) + (m2 - m1) + (cond2 - cond1);
 
     if (sum == 1)
     {
         if (rank == 0)
-            printf("[T] %d: [%f %f] Join %f R1 [%f = %f + %f + %f] C %f\n", lc, (total2 - total1), total_time, (j2 - j1), comm1, (c2 - c1), (b2 - b1), (m2 - m1), (cond2 - cond1));
+            printf("[T] %d: Total %f %f Join %f Comm %f Insert %f Cond %f Packet size %d\n", lc, (total2 - total1), total_time, (j2 - j1), (b2 - b1), (m2 - m1), (cond2 - cond1), process_data_buffer_size);
         return 1;
     }
     else
     {
         if (rank == 0)
-            printf("[F] %d: [%f %f] Join %f R1 [%f = %f + %f + %f] C %f\n", lc, (total2 - total1), total_time, (j2 - j1), comm1, (c2 - c1), (b2 - b1), (m2 - m1), (cond2 - cond1));
+            printf("[F] %d: Total %f %f Join %f Comm %f Insert %f Cond %f Packet size %d\n", lc, (total2 - total1), total_time, (j2 - j1), (b2 - b1), (m2 - m1), (cond2 - cond1), process_data_buffer_size);
         return 0;
     }
 }

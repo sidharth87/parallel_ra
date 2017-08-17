@@ -152,7 +152,7 @@ static void read_input_relation_from_file_to_local_buffer(char **argv)
     {
         char meta_data_filename[1024];
         sprintf(meta_data_filename, "%s/meta_data.txt", argv[1]);
-        printf("Opening File %s\n", meta_data_filename);
+        //printf("Opening File %s\n", meta_data_filename);
 
         FILE *fp_in;
         fp_in = fopen(meta_data_filename, "r");
@@ -162,7 +162,7 @@ static void read_input_relation_from_file_to_local_buffer(char **argv)
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
         fclose(fp_in);
-        printf("Total number of rows = %d\n", global_row_count);
+        //printf("Total number of rows = %d\n", global_row_count);
     }
 
     MPI_Bcast(&global_row_count, 1, MPI_INT, 0, MPI_COMM_WORLD);
