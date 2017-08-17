@@ -116,9 +116,9 @@ int main(int argc, char **argv)
     while (ret != 1);
 
 
-    char loop_join[1024];
-    sprintf(loop_join, "loop_join_%d_%d.txt", loop_count, rank);
-    T.print_inner_hash_data(loop_join);
+    //char loop_join[1024];
+    //sprintf(loop_join, "loop_join_%d_%d.txt", loop_count, rank);
+    //T.print_inner_hash_data(loop_join);
 
     MPI_Barrier(MPI_COMM_WORLD);
     double end_time = MPI_Wtime();
