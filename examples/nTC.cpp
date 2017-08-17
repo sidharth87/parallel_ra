@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     MPI_Allreduce(&lG_edge_count, &gG_edge_count, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     if (rank == 0)
-        printf("Input Edge Count %d TC Edge Count %d Total iterations %d Total time to complete %f\n", gG_edge_count, gTC_edge_count, loop_count, end_time - start_time);
+        printf("Cores %d Input Edge Count %d TC Edge Count %d Total iterations %d Total time to complete %f\n", nprocs, gG_edge_count, gTC_edge_count, loop_count, end_time - start_time);
 
     G.cleanupall();
     T.cleanupall();
