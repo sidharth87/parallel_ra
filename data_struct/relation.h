@@ -54,7 +54,6 @@ private:
 public:
 
     relation();
-    ~relation();
     relation(const relation &r);
     relation(int r, int n, MPI_Comm c, int grc, int lrc);
 
@@ -67,6 +66,8 @@ public:
     void free_hash_buckets();
 
     int get_hash_size() {return t_inner_hash->size();}
+    void cleanupall();
+    void cleanup();
 
     int get_number_of_global_rows() {return global_number_of_rows;}
     void set_number_of_global_rows (int rc) {global_number_of_rows = rc;}

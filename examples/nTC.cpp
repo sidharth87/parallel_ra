@@ -115,6 +115,7 @@ int main(int argc, char **argv)
     }
     while (ret != 1);
 
+
     char loop_join[1024];
     sprintf(loop_join, "loop_join_%d_%d.txt", loop_count, rank);
     T.print_inner_hash_data(loop_join);
@@ -133,6 +134,10 @@ int main(int argc, char **argv)
 
     if (rank == 0)
         printf("Input Edge Count %d TC Edge Count %d Total iterations %d Total time to complete %f\n", gG_edge_count, gTC_edge_count, loop_count, end_time - start_time);
+
+    G.cleanupall();
+    T.cleanupall();
+    dT.cleanup();
 
     // Finalizing MPI
     MPI_Finalize();

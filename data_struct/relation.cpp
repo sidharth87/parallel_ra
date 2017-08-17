@@ -12,11 +12,22 @@ relation::relation()
     nprocs = 1;
 }
 
-relation::~relation()
+void relation::cleanupall()
 {
     this->t_inner_hash->deleteAllElements();
     delete this->t_inner_hash;
+
+    return;
 }
+
+
+void relation::cleanup()
+{
+    delete this->t_inner_hash;
+
+    return;
+}
+
 
 relation::relation(int r, int n, MPI_Comm c, int grc, int lrc)
 {
@@ -296,7 +307,17 @@ int relation::join(relation* G, relation* dt, int lc)
     u32 hash1 = 0;
     u32 hash2 = 0;
 
+    // hashset storing join output
     hashset<two_tuple>* st = new hashset<two_tuple>();
+
+    // Send Join output
+    /* process_size[j] stores the number of samples to be sent to process with rank j */
+    int process_size[nprocs];
+    memset(process_size, 0, nprocs * sizeof(int));
+
+    /* vector[i] contains the data that needs to be sent to process i */
+    std::vector<int> *process_data_vector;
+    process_data_vector = new std::vector<int>[nprocs];
 
 
     for (u32 i1 = 0; i1 < dt->t_inner_hash->bucket_count(); ++i1)
@@ -319,116 +340,100 @@ int relation::join(relation* G, relation* dt, int lc)
                     const two_tuple* sttup = st->add(tup3, hash1, hash2);
                     if (sttup != tup3)
                         delete tup3;
+                    else
+                    {
+                        uint64_t index = outer_hash(tup3->b)%nprocs;
+                        process_size[index] = process_size[index] + COL_COUNT;
+                        process_data_vector[index].push_back(tup3->a);
+                        process_data_vector[index].push_back(tup3->b);
+                    }
                 }
             }
         }
     }
+    st->deleteAllElements();
+    delete st;
     j2 = MPI_Wtime();
 
 
+
+    c1 = MPI_Wtime();
+
+    int prefix_sum_process_size[nprocs];
+    memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
+    for(int i = 1; i < nprocs; i++)
+        prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
+
+    int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
+    int* process_data = 0;
+    try
     {
-        // Send Join output
-        /* process_size[j] stores the number of samples to be sent to process with rank j */
-        c1 = MPI_Wtime();
-
-        int process_size[nprocs];
-        memset(process_size, 0, nprocs * sizeof(int));
-
-        /* vector[i] contains the data that needs to be sent to process i */
-        std::vector<int> *process_data_vector;
-        process_data_vector = new std::vector<int>[nprocs];
-        for (u32 bi = 0; bi < st->bucket_count(); ++bi)
-        {
-            for (hashset<two_tuple>::bucket_iter it(*st, bi); it.more(); ++it)
-            {
-                const two_tuple* tup = it.get();
-                uint64_t index = outer_hash(tup->b)%nprocs;
-                process_size[index] = process_size[index] + COL_COUNT;
-                process_data_vector[index].push_back(tup->a);
-                process_data_vector[index].push_back(tup->b);
-            }
-        }
-        delete st;
-
-
-        int prefix_sum_process_size[nprocs];
-        memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
-        for(int i = 1; i < nprocs; i++)
-            prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
-
-        int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
-
-        int* process_data = 0;
-        try
-        {
-            process_data = new int[process_data_buffer_size];
-            memset(process_data, 0, process_data_buffer_size * sizeof(int));
-        }
-        catch (const std::bad_alloc& e)
-        {
-            printf("[1] Allocation failed: %s\n", e.what());
-            printf("R: %d %d\n", rank, process_data_buffer_size);
-        }
-
-        for(int i = 0; i < nprocs; i++)
-            memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
-
-        delete[] process_data_vector;
-        c2 = MPI_Wtime();
-
-
-        /* This step prepares for actual data transfer */
-        /* Every process sends to every other process the amount of data it is going to send */
-        b1 = MPI_Wtime();
-
-        int recv_process_size_buffer[nprocs];
-        memset(recv_process_size_buffer, 0, nprocs * sizeof(int));
-        MPI_Alltoall(process_size, 1, MPI_INT, recv_process_size_buffer, 1, MPI_INT, comm);
-
-        int prefix_sum_recv_process_size_buffer[nprocs];
-        memset(prefix_sum_recv_process_size_buffer, 0, nprocs * sizeof(int));
-        for(int i = 1; i < nprocs; i++)
-            prefix_sum_recv_process_size_buffer[i] = prefix_sum_recv_process_size_buffer[i - 1] + recv_process_size_buffer[i - 1];
-
-        /* Sending data to all processes */
-        /* What is the buffer size to allocate */
-        int outer_hash_buffer_size = 0;
-        for(int i = 0; i < nprocs; i++)
-            outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
-
-        int *hash_buffer = 0;
-        try
-        {
-            hash_buffer = new int[outer_hash_buffer_size];
-            memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
-        }
-        catch (const std::bad_alloc& e)
-        {
-            printf("[2] Allocation failed: %s\n", e.what());
-            printf("R: %d %d\n", rank, outer_hash_buffer_size);
-        }
-
-
-        MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
-        b2 = MPI_Wtime();
-
-        m1 = MPI_Wtime();
-
-        before1 = this->t_inner_hash->size();
-        this->insert(hash_buffer, outer_hash_buffer_size, dt);
-        after1 = this->t_inner_hash->size();
-
-        delete[] hash_buffer;
-        delete[] process_data;
-        m2 = MPI_Wtime();
+        process_data = new int[process_data_buffer_size];
+        memset(process_data, 0, process_data_buffer_size * sizeof(int));
+    }
+    catch (const std::bad_alloc& e)
+    {
+        printf("[1] Allocation failed: %s\n", e.what());
+        printf("R: %d %d\n", rank, process_data_buffer_size);
     }
 
+    for(int i = 0; i < nprocs; i++)
+        memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
+
+    delete[] process_data_vector;
+    c2 = MPI_Wtime();
+
+
+    /* This step prepares for actual data transfer */
+    /* Every process sends to every other process the amount of data it is going to send */
+    b1 = MPI_Wtime();
+
+    int recv_process_size_buffer[nprocs];
+    memset(recv_process_size_buffer, 0, nprocs * sizeof(int));
+    MPI_Alltoall(process_size, 1, MPI_INT, recv_process_size_buffer, 1, MPI_INT, comm);
+
+    int prefix_sum_recv_process_size_buffer[nprocs];
+    memset(prefix_sum_recv_process_size_buffer, 0, nprocs * sizeof(int));
+    for(int i = 1; i < nprocs; i++)
+        prefix_sum_recv_process_size_buffer[i] = prefix_sum_recv_process_size_buffer[i - 1] + recv_process_size_buffer[i - 1];
+
+    /* Sending data to all processes */
+    /* What is the buffer size to allocate */
+    int outer_hash_buffer_size = 0;
+    for(int i = 0; i < nprocs; i++)
+        outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
+
+    int *hash_buffer = 0;
+    try
+    {
+        hash_buffer = new int[outer_hash_buffer_size];
+        memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
+    }
+    catch (const std::bad_alloc& e)
+    {
+        printf("[2] Allocation failed: %s\n", e.what());
+        printf("R: %d %d\n", rank, outer_hash_buffer_size);
+    }
+
+
+    MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
+    b2 = MPI_Wtime();
+
+    m1 = MPI_Wtime();
+
+    before1 = this->t_inner_hash->size();
+    this->insert(hash_buffer, outer_hash_buffer_size, dt);
+    after1 = this->t_inner_hash->size();
+
+    delete[] hash_buffer;
+    delete[] process_data;
+    m2 = MPI_Wtime();
+
+
     cond1 = MPI_Wtime();
-    int done;
+    int done = 0;
     if (before1 == after1)
         done = 1;
-    else
-        done = 0;
 
     int sum = 0;
     MPI_Allreduce(&done, &sum, 1, MPI_INT, MPI_BOR, comm);
@@ -439,7 +444,6 @@ int relation::join(relation* G, relation* dt, int lc)
     double join_time = j2 - j1;
     double comm1 = (c2 - c1) + (b2 - b1) + (m2 - m1);
     double cond = (cond2 - cond1);
-
     double total_time = join_time + comm1 + cond;
 
     if (sum == 1)
@@ -454,8 +458,6 @@ int relation::join(relation* G, relation* dt, int lc)
             printf("[F] %d: [%f %f] Join %f R1 [%f = %f + %f + %f] C %f\n", lc, (total2 - total1), total_time, (j2 - j1), comm1, (c2 - c1), (b2 - b1), (m2 - m1), (cond2 - cond1));
         return 0;
     }
-
-
 }
 
 
@@ -476,9 +478,7 @@ void relation::insert(int *buffer, int buffer_size, relation* dt)
         if (sttup != tup)
             delete tup;
         else
-        {
             dt_temp->add(tup, bucket_id, inner_bucket_id);
-        }
     }
 
     delete dt->t_inner_hash;
