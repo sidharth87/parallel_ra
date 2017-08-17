@@ -364,17 +364,10 @@ int relation::join(relation* G, relation* dt, int lc)
         prefix_sum_process_size[i] = prefix_sum_process_size[i - 1] + process_size[i - 1];
 
     int process_data_buffer_size = prefix_sum_process_size[nprocs - 1] + process_size[nprocs - 1];
+
     int* process_data = 0;
-    try
-    {
-        process_data = new int[process_data_buffer_size];
-        memset(process_data, 0, process_data_buffer_size * sizeof(int));
-    }
-    catch (const std::bad_alloc& e)
-    {
-        printf("[1] Allocation failed: %s\n", e.what());
-        printf("R: %d %d\n", rank, process_data_buffer_size);
-    }
+    process_data = new int[process_data_buffer_size];
+    memset(process_data, 0, process_data_buffer_size * sizeof(int));
 
     for(int i = 0; i < nprocs; i++)
         memcpy(process_data + prefix_sum_process_size[i], &process_data_vector[i][0], process_data_vector[i].size() * sizeof(int));
@@ -401,16 +394,8 @@ int relation::join(relation* G, relation* dt, int lc)
         outer_hash_buffer_size = outer_hash_buffer_size + recv_process_size_buffer[i];
 
     int *hash_buffer = 0;
-    try
-    {
-        hash_buffer = new int[outer_hash_buffer_size];
-        memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
-    }
-    catch (const std::bad_alloc& e)
-    {
-        printf("[2] Allocation failed: %s\n", e.what());
-        printf("R: %d %d\n", rank, outer_hash_buffer_size);
-    }
+    hash_buffer = new int[outer_hash_buffer_size];
+    memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
 
 
     MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, comm);
