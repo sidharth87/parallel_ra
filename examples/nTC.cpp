@@ -29,8 +29,8 @@ static void local_buffer_with_input_relation();
 
 static int rank = 0;
 static int nprocs = 1;
-static u32 local_row_count;
-static u32 global_row_count;
+static int local_row_count;
+static int global_row_count;
 static int *read_buffer;
 
 int main(int argc, char **argv)
