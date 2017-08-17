@@ -167,7 +167,7 @@ static void read_input_relation_from_file_to_local_buffer(char **argv)
 
     MPI_Bcast(&global_row_count, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    u32 read_offset;
+    int read_offset;
 
 
     read_offset = ceil((float)global_row_count / nprocs) * rank;
