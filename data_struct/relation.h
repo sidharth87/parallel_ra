@@ -10,6 +10,7 @@
 #include <mpi.h>
 #include "../hash/hashtable.h"
 #include "../hash/hashset.h"
+#include "../hash/twohashtable_vector.h"
 
 #define COL_COUNT 2
 
@@ -47,8 +48,6 @@ private:
 
 
     hashset<two_tuple>* t_inner_hash;
-
-
 
 
 public:
@@ -102,7 +101,6 @@ public:
 
     //int join(relation* r, int lc);
     int join(relation* r, relation* dt, int lc);
-    void insert(int* buffer, int buffer_size);
     void insert(int* buffer, int buffer_size, relation* dt);
 };
 

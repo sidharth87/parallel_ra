@@ -318,7 +318,6 @@ int relation::join(relation* G, relation* dt, int lc)
     std::vector<int> *process_data_vector;
     process_data_vector = new std::vector<int>[nprocs];
 
-
     for (u32 i1 = 0; i1 < dt->t_inner_hash->bucket_count(); ++i1)
     {
         for (hashset<two_tuple>::bucket_iter it(*(G->t_inner_hash), i1); it.more(); ++it)
@@ -353,7 +352,6 @@ int relation::join(relation* G, relation* dt, int lc)
     st->deleteAllElements();
     delete st;
     j2 = MPI_Wtime();
-
 
 
     b1 = MPI_Wtime();
@@ -424,7 +422,6 @@ int relation::join(relation* G, relation* dt, int lc)
     total2 = MPI_Wtime();
 
     double total_time = (j2 - j1) + (b2 - b1) + (m2 - m1) + (cond2 - cond1);
-
     if (sum == 1)
     {
         if (rank == 0)
@@ -462,27 +459,6 @@ void relation::insert(int *buffer, int buffer_size, relation* dt)
 
     delete dt->t_inner_hash;
     dt->t_inner_hash = dt_temp;
-    return;
-}
-
-
-void relation::insert(int *buffer, int buffer_size)
-{
-    for(int k = 0; k < buffer_size; k = k + COL_COUNT)
-    {
-        u32 bucket_id = inner_hash((uint64_t)buffer[k]);
-        u32 inner_bucket_id = all_column_hash((uint64_t)buffer[k], (uint64_t)buffer[k + 1]);
-
-
-        two_tuple* tup = new two_tuple();
-        tup->a = (uint64_t)buffer[k];
-        tup->b = (uint64_t)buffer[k + 1];
-        const two_tuple* sttup = t_inner_hash->add(tup, bucket_id, inner_bucket_id);
-        if (sttup != tup)
-            delete tup;
-
-    }
-
     return;
 }
 
