@@ -140,13 +140,18 @@ namespace souffle {
                 
                 std::vector<int> *process_data_vector;
                 process_data_vector = new std::vector<int>[nprocs];
-                //for(auto it = rel_4_new_reach.begin(); it < rel_4_new_reach.end(); ++it)
-                //{
-                        uint64_t index = outer_hash(/*it->a*/0)%nprocs;
+                
+                auto part = rel_4_new_reach->partition();
+                pfor(auto it = part.begin(); it < part.end(); ++it)
+                {
+                    for (const auto& env0 : *it)
+                    {
+                        uint64_t index = outer_hash(env0[0])%nprocs;
                         process_size[index] = process_size[index] + 2 /*COL_COUNT*/;
-                        //process_data_vector[index].push_back(it->a);
-                        //process_data_vector[index].push_back(it->b);    
-                //}
+                        process_data_vector[index].push_back(env0[0]);
+                        process_data_vector[index].push_back(env0[1]);
+                    }
+                }
                 int prefix_sum_process_size[nprocs];
                 memset(prefix_sum_process_size, 0, nprocs * sizeof(int));
                 for(int i = 1; i < nprocs; i++)
@@ -187,8 +192,14 @@ namespace souffle {
 
 
                 MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, MPI_COMM_WORLD);
-                
-                //rel_5_new_reach->insertAll(hash_buffer);
+
+                // We might need a try block around this loop
+                CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
+                for (int i = 0; i < outer_hash_buffer_size; i+=2)
+                {
+                    Tuple<RamDomain, 2> tuple({(RamDomain)(hash_buffer[i]), (RamDomain) (hash_buffer[i+1])});
+                    rel_5_new_reach->insert(tuple, READ_OP_CONTEXT(rel_5_new_reach_op_ctxt));
+                }
 
                 //rel_4_new_reach;
                 rel_5_new_reach->insertAll(*rel_4_new_reach);
