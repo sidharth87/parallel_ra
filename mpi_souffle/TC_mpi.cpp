@@ -33,8 +33,12 @@ namespace souffle {
     public:
         SymbolTable symTable;
         // -- Table: link
+        ram::Relation<Auto, 2, ram::index < 0 >> *rel_0_global;
+        souffle::RelationWrapper<0, ram::Relation<Auto, 2, ram::index < 0 >>, Tuple<RamDomain, 2>, 2, true, false> wrapper_rel_0_global;
+        
         ram::Relation<Auto, 2, ram::index < 0 >> *rel_1_link;
         souffle::RelationWrapper<0, ram::Relation<Auto, 2, ram::index < 0 >>, Tuple<RamDomain, 2>, 2, true, false> wrapper_rel_1_link;
+        
         // -- Table: reach
         ram::Relation<Auto, 2, ram::index < 0, 1 >> *rel_2_reach;
         souffle::RelationWrapper<1, ram::Relation<Auto, 2, ram::index < 0, 1 >>, Tuple<RamDomain, 2>, 2, false, true> wrapper_rel_2_reach;
@@ -47,6 +51,8 @@ namespace souffle {
     public:
 
         Sf_TC() :
+        rel_0_global(new ram::Relation<Auto, 2, ram::index < 0 >> ()),
+        wrapper_rel_0_global(*rel_0_global, symTable, "global", std::array<const char *, 2>{"s:symbol", "s:symbol"}, std::array<const char *, 2>{"x", "y"}),
         rel_1_link(new ram::Relation<Auto, 2, ram::index < 0 >> ()),
         wrapper_rel_1_link(*rel_1_link, symTable, "link", std::array<const char *, 2>{"s:symbol", "s:symbol"}, std::array<const char *, 2>{"x", "y"}),
         rel_2_reach(new ram::Relation<Auto, 2, ram::index < 0, 1 >> ()),
@@ -55,6 +61,7 @@ namespace souffle {
         rel_4_new_reach(new ram::Relation<Auto, 2>()),
         rel_5_new_reach(new ram::Relation<Auto, 2>())
         {
+            addRelation("global", &wrapper_rel_0_global, 1, 0);
             addRelation("link", &wrapper_rel_1_link, 1, 0);
             addRelation("reach", &wrapper_rel_2_reach, 0, 1);
         }
@@ -84,8 +91,11 @@ namespace souffle {
             if (!rel_1_link->empty()) {
                 auto part = rel_1_link->partition();
                 PARALLEL_START;
-                CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_1_link->createContext());
-                CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_2_reach->createContext());
+                //CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_1_link->createContext());
+                //CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_2_reach->createContext());
+                
+                CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_0_global->createContext());
+                CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_0_global->createContext());
                 pfor(auto it = part.begin(); it < part.end(); ++it)
                 try {
                     for (const auto& env0 : *it) {
@@ -98,7 +108,11 @@ namespace souffle {
                 PARALLEL_END;
             }
             rel_3_delta_reach->insertAll(*rel_2_reach);
+            int count = 0;
             for (;;) {
+                if (rank == 0)
+                printf("[%d] Iteration %d\n", rank, count);
+                count++;
                 SignalHandler::instance()->setMsg(R"_(reach(x,y) :-
                                               reach(x,z),
                                               link(z,y).
@@ -106,20 +120,31 @@ namespace souffle {
                 if (!rel_3_delta_reach->empty()&&!rel_1_link->empty()) {
                     auto part = rel_3_delta_reach->partition();
                     PARALLEL_START;
-                    CREATE_OP_CONTEXT(rel_3_delta_reach_op_ctxt, rel_3_delta_reach->createContext());
-                    CREATE_OP_CONTEXT(rel_4_new_reach_op_ctxt, rel_4_new_reach->createContext());
-                    CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
-                    CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_1_link->createContext());
-                    CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_2_reach->createContext());
+                    //CREATE_OP_CONTEXT(rel_3_delta_reach_op_ctxt, rel_3_delta_reach->createContext());
+                    //CREATE_OP_CONTEXT(rel_4_new_reach_op_ctxt, rel_4_new_reach->createContext());
+                    //CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
+                    //CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_1_link->createContext());
+                    //CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_2_reach->createContext());
+                    
+                    CREATE_OP_CONTEXT(rel_3_delta_reach_op_ctxt, rel_0_global->createContext());
+                    CREATE_OP_CONTEXT(rel_4_new_reach_op_ctxt, rel_0_global->createContext());
+                    CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_0_global->createContext());
+                    CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_0_global->createContext());
+                    CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_0_global->createContext());
+                    printf("Size of global rel = %d\n", rel_0_global->size());
                     pfor(auto it = part.begin(); it < part.end(); ++it)
                     try {
                         for (const auto& env0 : *it) {
                             const Tuple<RamDomain, 2> key({env0[1], 0});
+                            //printf("[%d] VAL %d %d\n", rank, (RamDomain) (env0[0]), (RamDomain) (env0[1]));
                             auto range = rel_1_link->equalRange<0>(key, READ_OP_CONTEXT(rel_1_link_op_ctxt));
                             for (const auto& env1 : range) {
                                 if (!rel_2_reach->contains(Tuple<RamDomain, 2>({env0[0], env1[1]}), READ_OP_CONTEXT(rel_2_reach_op_ctxt))) {
                                     Tuple<RamDomain, 2> tuple({(RamDomain) (env0[0]), (RamDomain) (env1[1])});
                                     rel_4_new_reach->insert(tuple, READ_OP_CONTEXT(rel_4_new_reach_op_ctxt));
+                                    //if (rank == 0)
+                                    printf("[%d] JOI %d %d\n", rank, (RamDomain) (env0[0]), (RamDomain) (env1[1]));
+
                                 }
                             }
                         }
@@ -128,7 +153,7 @@ namespace souffle {
                     }
                     PARALLEL_END;
                 }
-                if (rel_4_new_reach->empty()) break;
+                //if (rel_4_new_reach->empty()) break;
                 
                 
                 // Transmit rel_4_new_reach
@@ -142,7 +167,7 @@ namespace souffle {
                 process_data_vector = new std::vector<int>[nprocs];
                 
                 auto part = rel_4_new_reach->partition();
-                pfor(auto it = part.begin(); it < part.end(); ++it)
+                for(auto it = part.begin(); it < part.end(); ++it)
                 {
                     for (const auto& env0 : *it)
                     {
@@ -150,6 +175,8 @@ namespace souffle {
                         process_size[index] = process_size[index] + 2 /*COL_COUNT*/;
                         process_data_vector[index].push_back(env0[0]);
                         process_data_vector[index].push_back(env0[1]);
+                        //if (rank == 0)
+                        printf("[%d] JO %d %d\n", rank, env0[0], env0[1]);
                     }
                 }
                 int prefix_sum_process_size[nprocs];
@@ -190,21 +217,54 @@ namespace souffle {
                 hash_buffer = new int[outer_hash_buffer_size];
                 memset(hash_buffer, 0, outer_hash_buffer_size * sizeof(int));
 
-
+                
                 MPI_Alltoallv(process_data, process_size, prefix_sum_process_size, MPI_INT, hash_buffer, recv_process_size_buffer, prefix_sum_recv_process_size_buffer, MPI_INT, MPI_COMM_WORLD);
 
+                printf("hash buffer size %d\n", outer_hash_buffer_size);
                 // We might need a try block around this loop
-                CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
+                //CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
+                CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_0_global->createContext());
                 for (int i = 0; i < outer_hash_buffer_size; i+=2)
                 {
                     Tuple<RamDomain, 2> tuple({(RamDomain)(hash_buffer[i]), (RamDomain) (hash_buffer[i+1])});
+                    //if (rank == 1)
+                    printf("[%d] Tuple to insert - [%d %d]\n", rank, hash_buffer[i], hash_buffer[i + 1]);
                     rel_5_new_reach->insert(tuple, READ_OP_CONTEXT(rel_5_new_reach_op_ctxt));
                 }
 
                 //rel_4_new_reach;
-                rel_5_new_reach->insertAll(*rel_4_new_reach);
+                //rel_5_new_reach->insertAll(*rel_4_new_reach);
 
+                int before1 = rel_2_reach->size();
                 rel_2_reach->insertAll(*rel_5_new_reach);
+                
+                auto part1 = rel_2_reach->partition();
+                for(auto it = part1.begin(); it < part1.end(); ++it)
+                {
+                    for (const auto& env0 : *it)
+                    {
+                        if (rank == 1)
+                        printf("%d %d\n", env0[0], env0[1]);
+                    }
+                }
+                
+                int after1 = rel_2_reach->size();
+                
+                printf("size befor and after %d %d\n", before1, after1);
+                
+                int done = 0;
+                if (before1 == after1)
+                    done = 1;
+                int sum = 0;
+                MPI_Allreduce(&done, &sum, 1, MPI_INT, MPI_BOR, MPI_COMM_WORLD);
+                
+                if (sum == 1)
+                {
+                    break;
+                }
+                
+                //printf("[%d] Relation size %d\n", rank, element_count);
+                
                 {
                     auto rel_0 = rel_3_delta_reach;
                     rel_3_delta_reach = rel_5_new_reach;
@@ -241,6 +301,7 @@ namespace souffle {
         void loadAll(std::string dirname) {
             try {
                 std::string fname = "./link.facts_" + std::to_string(rank);
+                printf("[%d] Filename %s\n", rank, fname.c_str());
                 //std::cout << "dirname: " << dirname << "\n";
                 std::map<std::string, std::string> directiveMap({
                     {"IO", "file"},
@@ -255,6 +316,25 @@ namespace souffle {
                 std::cerr << e.what();
                 exit(1);
             }
+            
+            try {
+                std::string fname = "./link.facts";
+                printf("[%d] Filename %s\n", rank, fname.c_str());
+                //std::cout << "dirname: " << dirname << "\n";
+                std::map<std::string, std::string> directiveMap({
+                    {"IO", "file"},
+                    {"filename", fname},
+                    {"name", "link"}});
+                if (!dirname.empty() && directiveMap["IO"] == "file" && directiveMap["filename"].front() != '/') {
+                    directiveMap["filename"] = dirname + "/" + directiveMap["filename"];
+                }
+                IODirectives ioDirectives(directiveMap);
+                IOSystem::getInstance().getReader(SymbolMask({1, 1}), symTable, ioDirectives)->readAll(*rel_0_global);
+            } catch (std::exception& e) {
+                std::cerr << e.what();
+                exit(1);
+            }
+            
         }
     public:
 
