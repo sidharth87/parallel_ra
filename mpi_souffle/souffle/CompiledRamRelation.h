@@ -767,7 +767,7 @@ private:
     typedef typename table_factory<tuple_type, primary_index_t, true>::type table_t;
 
     /* The indexed data stored in this relation. */
-    table_t data;
+        table_t data;
 
 public:
     /* The iterator type utilized by this relation. */

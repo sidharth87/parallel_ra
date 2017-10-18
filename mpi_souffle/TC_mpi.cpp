@@ -91,11 +91,8 @@ namespace souffle {
             if (!rel_1_link->empty()) {
                 auto part = rel_1_link->partition();
                 PARALLEL_START;
-                //CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_1_link->createContext());
-                //CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_2_reach->createContext());
-                
-                CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_0_global->createContext());
-                CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_0_global->createContext());
+                CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_1_link->createContext());
+                CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_2_reach->createContext());
                 pfor(auto it = part.begin(); it < part.end(); ++it)
                 try {
                     for (const auto& env0 : *it) {
@@ -120,18 +117,13 @@ namespace souffle {
                 if (!rel_3_delta_reach->empty()&&!rel_1_link->empty()) {
                     auto part = rel_3_delta_reach->partition();
                     PARALLEL_START;
-                    //CREATE_OP_CONTEXT(rel_3_delta_reach_op_ctxt, rel_3_delta_reach->createContext());
-                    //CREATE_OP_CONTEXT(rel_4_new_reach_op_ctxt, rel_4_new_reach->createContext());
-                    //CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
-                    //CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_1_link->createContext());
-                    //CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_2_reach->createContext());
+                    CREATE_OP_CONTEXT(rel_3_delta_reach_op_ctxt, rel_3_delta_reach->createContext());
+                    CREATE_OP_CONTEXT(rel_4_new_reach_op_ctxt, rel_4_new_reach->createContext());
+                    CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
+                    CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_1_link->createContext());
+                    CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_2_reach->createContext());
                     
-                    CREATE_OP_CONTEXT(rel_3_delta_reach_op_ctxt, rel_0_global->createContext());
-                    CREATE_OP_CONTEXT(rel_4_new_reach_op_ctxt, rel_0_global->createContext());
-                    CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_0_global->createContext());
-                    CREATE_OP_CONTEXT(rel_1_link_op_ctxt, rel_0_global->createContext());
-                    CREATE_OP_CONTEXT(rel_2_reach_op_ctxt, rel_0_global->createContext());
-                    printf("Size of global rel = %d\n", rel_0_global->size());
+                    
                     pfor(auto it = part.begin(); it < part.end(); ++it)
                     try {
                         for (const auto& env0 : *it) {
@@ -172,10 +164,11 @@ namespace souffle {
                     for (const auto& env0 : *it)
                     {
                         uint64_t index = outer_hash(env0[0])%nprocs;
-                        process_size[index] = process_size[index] + 2 /*COL_COUNT*/;
+                        process_size[index] = process_size[index] + 2;
+                        // this is the problem, instead of transmitting the actual value, we are transmitting the local index of the values
                         process_data_vector[index].push_back(env0[0]);
                         process_data_vector[index].push_back(env0[1]);
-                        //if (rank == 0)
+                        
                         printf("[%d] JO %d %d\n", rank, env0[0], env0[1]);
                     }
                 }
@@ -222,8 +215,7 @@ namespace souffle {
 
                 printf("hash buffer size %d\n", outer_hash_buffer_size);
                 // We might need a try block around this loop
-                //CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
-                CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_0_global->createContext());
+                CREATE_OP_CONTEXT(rel_5_new_reach_op_ctxt, rel_5_new_reach->createContext());
                 for (int i = 0; i < outer_hash_buffer_size; i+=2)
                 {
                     Tuple<RamDomain, 2> tuple({(RamDomain)(hash_buffer[i]), (RamDomain) (hash_buffer[i+1])});
@@ -232,22 +224,9 @@ namespace souffle {
                     rel_5_new_reach->insert(tuple, READ_OP_CONTEXT(rel_5_new_reach_op_ctxt));
                 }
 
-                //rel_4_new_reach;
-                //rel_5_new_reach->insertAll(*rel_4_new_reach);
-
                 int before1 = rel_2_reach->size();
+                // inserting join output tuples recieved from the network
                 rel_2_reach->insertAll(*rel_5_new_reach);
-                
-                auto part1 = rel_2_reach->partition();
-                for(auto it = part1.begin(); it < part1.end(); ++it)
-                {
-                    for (const auto& env0 : *it)
-                    {
-                        if (rank == 1)
-                        printf("%d %d\n", env0[0], env0[1]);
-                    }
-                }
-                
                 int after1 = rel_2_reach->size();
                 
                 printf("size befor and after %d %d\n", before1, after1);
@@ -256,14 +235,13 @@ namespace souffle {
                 if (before1 == after1)
                     done = 1;
                 int sum = 0;
-                MPI_Allreduce(&done, &sum, 1, MPI_INT, MPI_BOR, MPI_COMM_WORLD);
-                
-                if (sum == 1)
+                MPI_Allreduce(&done, &sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                printf("[%d] sum = %d\n", rank, sum);
+                if (sum == nprocs)
                 {
                     break;
                 }
                 
-                //printf("[%d] Relation size %d\n", rank, element_count);
                 
                 {
                     auto rel_0 = rel_3_delta_reach;
