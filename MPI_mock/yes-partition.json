@@ -1,0 +1,63 @@
+{
+	"vertices": {
+		"yes-partition_0": {
+			"in": [
+				"A"
+			],
+			"on": [
+				"A"
+			],
+			"out": [
+				"A"
+			]
+		},
+		"yes-partition_1": {
+			"in": [
+				"A"
+			],
+			"on": [
+				"B1"
+			],
+			"out": [
+				"B1"
+			]
+		},
+		"yes-partition_2": {
+			"in": [
+				"A"
+			],
+			"on": [
+				"B2"
+			],
+			"out": [
+				"B2"
+			]
+		},
+		"yes-partition_3": {
+			"in": [
+				"B2",
+				"B1"
+			],
+			"on": [
+				"C"
+			],
+			"out": [
+				"C"
+			]
+		}
+	},
+	"edges": {
+		"yes-partition_0": [
+			"yes-partition_1",
+			"yes-partition_2"
+		],
+		"yes-partition_1": [
+			"yes-partition_3"
+		],
+		"yes-partition_2": [
+			"yes-partition_3"
+		],
+		"yes-partition_3": [
+		]
+	}
+}
