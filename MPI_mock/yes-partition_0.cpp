@@ -118,8 +118,8 @@ public:
         return symTable;
     }
 };
-//SouffleProgram *newInstance_yes_partition0(){return new Sf_yes_partition_0;}
-//SymbolTable *getST_yes_partition0(SouffleProgram *p){return &reinterpret_cast<Sf_yes_partition_0*>(p)->symTable;}
+//SouffleProgram *newInstance_yes_partition(){return new Sf_yes_partition_0;}
+//SymbolTable *getST_yes_partition(SouffleProgram *p){return &reinterpret_cast<Sf_yes_partition_0*>(p)->symTable;}
 #ifdef __EMBEDDED_SOUFFLE__
 class factory_Sf_yes_partition_0: public souffle::ProgramFactory {
     SouffleProgram *newInstance() {
